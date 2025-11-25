@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}Solicitudes{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Contenedor de tabla */
+.table-container {
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    max-height: 75vh;
+    overflow: auto;
+    position: relative;
+}
+
+/* Tabla */
+#solicitudesTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+#solicitudesTable thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#solicitudesTable th {
+    background: #1e4d7b;
+    color: white;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 1px solid #0d2240;
+    font-size: 0.85rem;
+}
+
+#solicitudesTable tbody tr {
+    height: 35px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#solicitudesTable tbody tr:nth-child(even) {
+    background: #e8f4f8;
+}
+
+#solicitudesTable tbody tr:nth-child(odd) {
+    background: #fff;
+}
+
+#solicitudesTable tbody tr:hover {
+    background: #d4e9f7 !important;
+}
+
+#solicitudesTable td {
+    padding: 8px 10px;
+    border-right: 1px solid #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    height: 35px;
+}
+
+/* Celdas editables */
+.editable {
+    cursor: text;
+}
+
+.editable:focus {
+    outline: 2px solid #667eea;
+    background: #fff !important;
+}
+
+/* Celdas con texto largo (con modal) */
+.clickable-cell {
+    cursor: pointer;
+    position: relative;
+}
+
+.clickable-cell::after {
+    content: "👁️";
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.clickable-cell:hover::after {
+    opacity: 1;
+}
+
+.clickable-cell:hover {
+    background: #e0e0e0 !important;
+}
+
+/* Badge de estado */
+.estado-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.estado-pendiente { background: #fff3cd; color: #856404; }
+.estado-aprobado { background: #d4edda; color: #155724; }
+.estado-rechazado { background: #f8d7da; color: #721c24; }
+.estado-completado { background: #d1ecf1; color: #0c5460; }
+
+/* Badge de urgencia */
+.urgencia-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.urgencia-baja { background: #e8f5e9; color: #2e7d32; }
+.urgencia-media { background: #fff3e0; color: #e65100; }
+.urgencia-alta { background: #ffebee; color: #c62828; }
+.urgencia-critica { background: #1e4d7b; color: white; }
+
+/* Botones */
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-small {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.close-x {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-x:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-body .field-label {
+    font-weight: 600;
+    color: #1e4d7b;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.modal-body .field-value {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table-container {
+        max-height: 65vh;
+    }
+    
+    #solicitudesTable th,
+    #solicitudesTable td {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+    
+    #solicitudesTable tbody tr {
+        height: 45px;
+    }
+    
+    #solicitudesTable td {
+        max-width: 150px;
+        height: 45px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-top: 0.5rem; margin-bottom: 1rem; color: #1e4d7b;">📋 Gestión de Solicitudes</h2>
+
+<div style="margin-bottom: 1.5rem; padding: 1rem; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+    <strong>💡 Información:</strong> Esta vista es solo de consulta. Haz clic en 👁️ para ver el contenido completo de cada campo.
+    {% if current_user.has_permission('edit') %}
+    <br><strong>✏️ Edición:</strong> Las celdas editables se pueden modificar haciendo clic. Usa el botón 💾 para guardar.
+    {% endif %}
+</div>
+
+<div class="table-container">
+    <table id="solicitudesTable">
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 80px;">OST</th>  
+                <th style="width: 110px;">Fecha</th>
+                <th style="width: 200px;">Email</th>
+                <th style="width: 150px;">Quien Completa</th>
+                <th style="width: 150px;">Área</th>
+                <th style="width: 150px;">Solicitante</th>
+                <th style="width: 120px;">Urgencia</th>
+                <th style="width: 150px;">Logística</th>
+                <th style="width: 180px;">Equipo</th>
+                <th style="width: 200px;">Motivo</th>
+                <th style="width: 120px;">Estado</th>
+                {% if current_user.has_permission('edit') %}
+                <th style="width: 100px;">Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for sol in solicitudes %}
+            <tr data-id="{{ sol.id }}">
+                <td>{{ sol.id }}</td>
+                <td>
+                    {% if sol.ost %}
+                    <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 700; font-family: 'Courier New', monospace;">
+                        {{ sol.ost }}
+                    </span>
+                    {% else %}
+                    <span style="color: #999;">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ sol.fecha_solicitud.strftime('%d/%m/%Y') if sol.fecha_solicitud else 'N/A' }}</td>
+                
+                <!-- Email (editable) -->
+                <td {% if current_user.has_permission('edit') %}contenteditable="true" class="editable"{% endif %} 
+                    data-field="email_solicitante"
+                    title="{{ sol.email_solicitante or '' }}">
+                    {{ sol.email_solicitante or '-' }}
+                </td>
+                
+                <!-- Quien Completa (editable) -->
+                <td {% if current_user.has_permission('edit') %}contenteditable="true" class="editable"{% endif %} 
+                    data-field="quien_completa"
+                    title="{{ sol.quien_completa or '' }}">
+                    {{ sol.quien_completa or '-' }}
+                </td>
+                
+                <!-- Área (editable) -->
+                <td {% if current_user.has_permission('edit') %}contenteditable="true" class="editable"{% endif %} 
+                    data-field="area_solicitante"
+                    title="{{ sol.area_solicitante or '' }}">
+                    {{ sol.area_solicitante or '-' }}
+                </td>
+                
+                <!-- Solicitante (editable) -->
+                <td {% if current_user.has_permission('edit') %}contenteditable="true" class="editable"{% endif %} 
+                    data-field="solicitante"
+                    title="{{ sol.solicitante or '' }}">
+                    {{ sol.solicitante or '-' }}
+                </td>
+                
+                <!-- Urgencia con badge -->
+                <td>
+                    {% set urgencia = sol.nivel_urgencia|lower if sol.nivel_urgencia else 'media' %}
+                    <span class="urgencia-badge urgencia-{{ urgencia }}">
+                        {{ sol.nivel_urgencia or 'Media' }}
+                    </span>
+                </td>
+                
+                <!-- Logística (editable) -->
+                <td {% if current_user.has_permission('edit') %}contenteditable="true" class="editable"{% endif %} 
+                    data-field="logistica_cargo"
+                    title="{{ sol.logistica_cargo or '' }}">
+                    {{ sol.logistica_cargo or '-' }}
+                </td>
+                
+                <!-- Equipo (con modal si es largo) -->
+                <td class="clickable-cell" 
+                    onclick="mostrarModal('Equipo', '{{ sol.equipo_corresponde_a or '' }}')"
+                    title="Haz clic para ver completo">
+                    {{ (sol.equipo_corresponde_a[:30] + '...') if sol.equipo_corresponde_a and sol.equipo_corresponde_a|length > 30 else (sol.equipo_corresponde_a or '-') }}
+                </td>
+                
+                <!-- Motivo (con modal si es largo) -->
+                <td class="clickable-cell" 
+                    onclick="mostrarModal('Motivo de Solicitud', '{{ sol.motivo_solicitud or '' }}')"
+                    title="Haz clic para ver completo">
+                    {{ (sol.motivo_solicitud[:30] + '...') if sol.motivo_solicitud and sol.motivo_solicitud|length > 30 else (sol.motivo_solicitud or '-') }}
+                </td>
+                
+                <!-- Estado con badge -->
+                <td>
+                    {% set estado = sol.estado|lower if sol.estado else 'pendiente' %}
+                    <span class="estado-badge estado-{{ estado }}">
+                        {{ sol.estado or 'Pendiente' }}
+                    </span>
+                </td>
+                
+                <!-- Acciones (solo si puede editar) -->
+                {% if current_user.has_permission('edit') %}
+                <td>
+                    <button class="btn btn-primary btn-small" onclick="guardarFila({{ sol.id }})">
+                        💾
+                    </button>
+                </td>
+                {% endif %}
+
+                
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal para mostrar contenido completo -->
+<div id="modalContenido" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Detalle</h3>
+            <button class="close-x" onclick="cerrarModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="field-label" id="modalLabel"></div>
+            <div class="field-value" id="modalValue"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="cerrarModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para mostrar modal con contenido completo
+function mostrarModal(titulo, contenido) {
+    document.getElementById('modalTitle').textContent = '📄 ' + titulo;
+    document.getElementById('modalLabel').textContent = titulo;
+    document.getElementById('modalValue').textContent = contenido || '(Sin información)';
+    document.getElementById('modalContenido').style.display = 'flex';
+}
+
+function cerrarModal() {
+    document.getElementById('modalContenido').style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modalContenido').addEventListener('click', function(e) {
+    if (e.target.id === 'modalContenido') {
+        cerrarModal();
+    }
+});
+
+// Función para guardar una fila
+function guardarFila(solicitudId) {
+    const row = document.querySelector('tr[data-id="' + solicitudId + '"]');
+    const editableCells = row.querySelectorAll('.editable');
+    
+    const data = {};
+    editableCells.forEach(cell => {
+        const field = cell.getAttribute('data-field');
+        data[field] = cell.textContent.trim();
+    });
+    
+    fetch('/api/solicitud/' + solicitudId, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('✅ Solicitud actualizada correctamente');
+            row.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                row.style.backgroundColor = '';
+            }, 2000);
+        } else {
+            alert('❌ Error al actualizar: ' + (result.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        alert('❌ Error de red: ' + error);
+    });
+}
+
+// Resaltar celdas editables al enfocar
+{% if current_user.has_permission('edit') %}
+document.querySelectorAll('.editable').forEach(cell => {
+    cell.addEventListener('focus', function() {
+        this.style.backgroundColor = '#fff3cd';
+    });
+    
+    cell.addEventListener('blur', function() {
+        this.style.backgroundColor = '';
+    });
+});
+{% endif %}
+
+// Información sobre permisos
+console.log('👁️ Modo de visualización de solicitudes cargado');
+{% if current_user.has_permission('edit') %}
+console.log('✏️ Tienes permisos de edición habilitados');
+{% else %}
+console.log('🔒 Modo solo lectura (sin permisos de edición)');
+{% endif %}
+</script>
+{% endblock %}

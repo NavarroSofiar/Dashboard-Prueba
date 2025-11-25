@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    font-weight: bold;
+}
+
+.profile-info h2 {
+    margin: 0 0 0.5rem 0;
+    color: #1e4d7b;
+}
+
+.profile-info p {
+    margin: 0.25rem 0;
+    color: #666;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.info-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.info-item label {
+    display: block;
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-item .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.875rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.password-strength {
+    margin-top: 0.5rem;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0;
+    transition: all 0.3s;
+}
+
+.strength-weak { width: 33%; background: #f44336; }
+.strength-medium { width: 66%; background: #ff9800; }
+.strength-strong { width: 100%; background: #4caf50; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <h2 style="color: #1e4d7b; margin-bottom: 1.5rem;">👤 Mi Perfil</h2>
+    
+    <!-- Información del perfil -->
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ current_user.username[0].upper() }}
+            </div>
+            <div class="profile-info">
+                <h2>{{ current_user.username }}</h2>
+                <p>📧 {{ current_user.email }}</p>
+                <p>
+                    <span class="role-badge role-{{ current_user.role }}">
+                        {% if current_user.role == 'admin' %}👑 Administrador
+                        {% elif current_user.role == 'editor' %}✏️ Editor Full
+                        {% elif current_user.role == 'editor_v2' %}📝 Editor Simple
+                        {% else %}👁️ Visualizador{% endif %}
+                    </span>
+                </p>
+            </div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Usuario desde</label>
+                <div class="value">
+                    {{ user_data.created_at.strftime('%d/%m/%Y') if user_data.created_at else 'N/A' }}
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <label>Último acceso</label>
+                <div class="value">
+                    {{ user_data.last_login.strftime('%d/%m/%Y %H:%M') if user_data.last_login else 'Nunca' }}
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <label>Estado de la cuenta</label>
+                <div class="value">
+                    {% if user_data.activo %}
+                        <span style="color: #4caf50;">✅ Activa</span>
+                    {% else %}
+                        <span style="color: #f44336;">⛔ Inactiva</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cambiar contraseña -->
+    <div class="profile-card">
+        <h3 style="color: #1e4d7b; margin-bottom: 1.5rem;">🔒 Cambiar Contraseña</h3>
+        
+        <form id="changePasswordForm">
+            <div class="form-group">
+                <label for="current_password">Contraseña Actual *</label>
+                <input type="password" id="current_password" name="current_password" required placeholder="Ingresa tu contraseña actual">
+            </div>
+            
+            <div class="form-group">
+                <label for="new_password">Nueva Contraseña *</label>
+                <input type="password" id="new_password" name="new_password" required minlength="8" placeholder="Mínimo 8 caracteres" oninput="checkPasswordStrength()">
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="strengthBar"></div>
+                </div>
+                <small id="strengthText" style="color: #666; font-size: 0.85rem;"></small>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirmar Nueva Contraseña *</label>
+                <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Repite la nueva contraseña">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                🔐 Actualizar Contraseña
+            </button>
+        </form>
+    </div>
+    
+    <!-- Información de permisos -->
+    <div class="profile-card">
+        <h3 style="color: #1e4d7b; margin-bottom: 1rem;">🛡️ Mis Permisos</h3>
+        <ul style="list-style: none; padding: 0;">
+            {% if current_user.has_permission('view') %}
+            <li style="padding: 0.5rem 0; color: #4caf50;">✅ Ver información</li>
+            {% endif %}
+            {% if current_user.has_permission('edit') %}
+            <li style="padding: 0.5rem 0; color: #4caf50;">✅ Editar equipos</li>
+            {% endif %}
+            {% if current_user.has_permission('delete') %}
+            <li style="padding: 0.5rem 0; color: #4caf50;">✅ Eliminar equipos</li>
+            {% endif %}
+            {% if current_user.has_permission('manage_users') %}
+            <li style="padding: 0.5rem 0; color: #4caf50;">✅ Gestionar usuarios</li>
+            {% endif %}
+            {% if current_user.has_permission('view_audit') %}
+            <li style="padding: 0.5rem 0; color: #4caf50;">✅ Ver historial de auditoría</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validar fortaleza de contraseña
+function checkPasswordStrength() {
+    const password = document.getElementById('new_password').value;
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    
+    let strength = 0;
+    
+    if (password.length >= 8) strength++;
+    if (password.length >= 12) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+    
+    strengthBar.className = 'password-strength-bar';
+    
+    if (strength <= 2) {
+        strengthBar.classList.add('strength-weak');
+        strengthText.textContent = '⚠️ Contraseña débil';
+        strengthText.style.color = '#f44336';
+    } else if (strength <= 4) {
+        strengthBar.classList.add('strength-medium');
+        strengthText.textContent = '⚡ Contraseña media';
+        strengthText.style.color = '#ff9800';
+    } else {
+        strengthBar.classList.add('strength-strong');
+        strengthText.textContent = '✅ Contraseña fuerte';
+        strengthText.style.color = '#4caf50';
+    }
+}
+
+// Cambiar contraseña
+document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const currentPassword = document.getElementById('current_password').value;
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    // Validar que las contraseñas coincidan
+    if (newPassword !== confirmPassword) {
+        alert('❌ Las contraseñas nuevas no coinciden');
+        return;
+    }
+    
+    // Validar longitud mínima
+    if (newPassword.length < 8) {
+        alert('❌ La nueva contraseña debe tener al menos 8 caracteres');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/perfil/cambiar-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Contraseña actualizada correctamente\n\nPor seguridad, serás redirigido al login.');
+            window.location.href = '/logout';
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error de red: ' + error);
+    }
+});
+</script>
+{% endblock %}

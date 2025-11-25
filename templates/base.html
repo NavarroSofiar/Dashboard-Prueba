@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Dashboard{% endblock %} - Gestión de Solicitudes</title>
+    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dfxjqvan0/image/upload/v1762455374/LOGO_MUX-removebg-preview_ms8w9o.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #3e4c87 0%, #20b6ba  100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: #fff;
+            padding: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 0.5rem;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav li {
+            margin: 0;
+        }
+
+        nav a {
+            display: block;
+            padding: 1rem 2rem;
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: #f8f9fa;
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead th {
+            background-color: #1e4d7b !important;
+            color: white !important;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #0d2240;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #e8f4f8 !important;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #ffffff !important;
+        }
+
+        tbody td {
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        tbody tr:hover {
+            background-color: #d4e9f7 !important;
+            cursor: pointer;
+        }
+
+        /* Métricas */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        /* Botones */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Editable cells */
+        .editable {
+            background-color: #fffacd;
+            cursor: text;
+        }
+
+        .editable:focus {
+            outline: 2px solid #667eea;
+            background-color: white;
+        }
+
+        /* Links en tablas */
+        table a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        table a:hover {
+            text-decoration: underline;
+        }
+
+        /* Mensajes */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            thead th, tbody td {
+                padding: 8px;
+            }
+
+            nav ul {
+                flex-direction: column;
+            }
+
+            nav a {
+                border-bottom: none;
+                border-left: 3px solid transparent;
+            }
+
+            nav a:hover, nav a.active {
+                border-left-color: #667eea;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <h1>📊 Dashboard - Gestión de Solicitudes y Equipos</h1>
+                <img src="https://res.cloudinary.com/dfxjqvan0/image/upload/v1762453830/LOGO_SYEMED_MUX-removebg_df3gwy.png" alt="Logo" style="height: 50px; width: auto;">
+            </div>
+            {% if current_user.is_authenticated %}
+            <div style="display: flex; align-items: center; gap: 1rem; color: white;">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.9rem; opacity: 0.9;">👤 {{ current_user.username }}</div>
+                    <div style="font-size: 0.8rem; opacity: 0.7;">{{ current_user.get_role_name() }}</div>
+                </div>
+                <li>
+                    <a href="{{ url_for('perfil') }}" class="{% if request.endpoint == 'perfil' %}active{% endif %}">
+                        <span class="nav-icon">👤</span>
+                        <span class="nav-text">Mi Perfil</span>
+                    </a>
+                </li>
+                
+                <a href="{{ url_for('logout') }}" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); border-radius: 6px; color: white; text-decoration: none; font-weight: 500; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    🚪 Salir
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>📈 Dashboard</a></li>
+            <li><a href="{{ url_for('solicitudes') }}" {% if request.endpoint == 'solicitudes' %}class="active"{% endif %}>📋 Solicitudes</a></li>
+            <li><a href="{{ url_for('equipos') }}" {% if request.endpoint == 'equipos' %}class="active"{% endif %}>🖥️ Equipos</a></li>
+            <li><a href="{{ url_for('archivos') }}" {% if request.endpoint == 'archivos' %}class="active"{% endif %}>📎 Archivos</a></li>
+            {% if current_user.is_authenticated and current_user.has_permission('manage_users') %}
+            <li><a href="{{ url_for('usuarios') }}" {% if request.endpoint == 'usuarios' %}class="active"{% endif %}>👥 Usuarios</a></li>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.has_permission('view_audit') %}
+            <li><a href="{{ url_for('auditoria') }}" {% if request.endpoint == 'auditoria' %}class="active"{% endif %}>📊 Auditoría</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

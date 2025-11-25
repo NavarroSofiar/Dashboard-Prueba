@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1.5rem; color: #1e4d7b;">📈 Resumen General</h2>
+
+<div class="metrics">
+    <div class="metric-card">
+        <div class="metric-label">Total Solicitudes</div>
+        <div class="metric-value">{{ total_solicitudes }}</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-label">Total Equipos</div>
+        <div class="metric-value">{{ total_equipos }}</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-label">Solicitudes Pendientes</div>
+        <div class="metric-value">{{ pendientes }}</div>
+    </div>
+    
+    <div class="metric-card">
+        <div class="metric-label">Equipos en Garantía</div>
+        <div class="metric-value">{{ en_garantia }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+    <div>
+        <h3 style="margin-bottom: 1rem; color: #1e4d7b;">📊 Estados de Solicitudes</h3>
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estado in estados %}
+                    <tr>
+                        <td>{{ estado.estado }}</td>
+                        <td style="font-weight: 600;">{{ estado.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div>
+        <h3 style="margin-bottom: 1rem; color: #1e4d7b;">📁 Archivos por Categoría</h3>
+        <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Categoría</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categorias %}
+                    <tr>
+                        <td style="text-transform: capitalize;">{{ cat.categoria }}</td>
+                        <td style="font-weight: 600;">{{ cat.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <h3 style="margin-bottom: 1rem; color: #1e4d7b;">🚀 Accesos Rápidos</h3>
+    <div style="display: flex; gap: 1rem;">
+        <a href="{{ url_for('solicitudes') }}" class="btn btn-primary">📋 Ver Solicitudes</a>
+        <a href="{{ url_for('equipos') }}" class="btn btn-primary">🖥️ Ver Equipos</a>
+        <a href="{{ url_for('archivos') }}" class="btn btn-primary">📎 Ver Archivos</a>
+    </div>
+</div>
+{% endblock %}

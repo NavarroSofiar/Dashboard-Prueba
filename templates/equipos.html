@@ -1,0 +1,2970 @@
+{% extends "base.html" %}
+
+{% block title %}Equipos{% endblock %}
+
+{% block extra_css %}
+<style>
+* {
+    box-sizing: border-box;
+}
+
+/* Contenedor principal */
+.table-container {
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    max-height: 75vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Wrapper para las dos secciones */
+.table-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* Sección fija (izquierda) */
+.fixed-section {
+    width: 380px;
+    flex-shrink: 0;
+    background: white;
+    overflow: hidden;
+    position: relative;
+    z-index: 50;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+/* Sección scrollable (derecha) */
+.scrollable-section {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0;
+}
+
+/* Indicador de scroll horizontal */
+.scrollable-section::after {
+    content: '→';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(to left, rgba(102, 126, 234, 0.8), transparent);
+    color: white;
+    padding: 20px 10px;
+    font-size: 1.5rem;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+@media (max-width: 768px) {
+    .scrollable-section::after {
+        opacity: 1;
+    }
+    
+    .scrollable-section.scrolled::after {
+        opacity: 0;
+    }
+}
+
+/* Headers de grupo */
+.group-headers {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    min-width: min-content;
+}
+
+.group-header {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.gh-dominio { background: #fff9c4; color: #333; width: 380px; }
+.gh-ingreso { background: #b3e5fc; color: #333; width: 1680px; }
+.gh-observacion { background: #fff9c4; color: #333; width: 320px; }
+.gh-tecnico { background: #fff; color: #333; width: 700px; border: 1px solid #ddd; }
+.gh-comercial { background: #80deea; color: #333; width: 740px; }
+.gh-acciones { background: linear-gradient(135deg, #2c5f8d 0%, #1e4d7b 100%); color: white; width: 110px; }
+
+/* Headers de columnas */
+.column-headers {
+    display: flex;
+    position: sticky;
+    top: 43px;
+    z-index: 99;
+    min-width: min-content;
+}
+
+.col-header {
+    padding: 12px 10px;
+    border: 1px solid #0d2240;
+    background: #1e4d7b;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/*Headers Especiales */
+.ch-precio { background: #80deea; color: #333; }
+.ch-ov { background: #80deea; color: #333; }
+.ch-estado-ov { background: #80deea; color: #333; }
+.ch-fecha-entrega { background: #80deea; color: #333; }
+.ch-remito-entrega { background: #80deea; color: #333; }
+.ch-fecha-envio { background: #fff9c4; color: #333; }
+.ch-proveedor { background: #fff9c4; color: #333; }
+.ch-reingreso { background: #fff9c4; color: #333; }
+
+/* Headers específicos de columnas fijas */
+.fixed-section .col-header:nth-child(1),
+.fixed-section .col-header:nth-child(2),
+.fixed-section .col-header:nth-child(3) {
+    background: #fff9c4;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+/* Anchos de columnas fijas */
+.ch-cliente { width: 180px; }
+.ch-ost { width: 80px; }
+.ch-estado { width: 120px; }
+
+/* Anchos de columnas scrollables */
+.ch-fecha-ingreso { width: 130px; }
+.ch-remito { width: 130px; }
+.ch-tipo { width: 220px; }
+.ch-marca { width: 160px; }
+.ch-modelo { width: 160px; }
+.ch-serie { width: 190px; }
+.ch-accesorios { width: 210px; }
+.ch-obs { width: 210px; }
+.ch-fotos { width: 160px; }
+.ch-prioridad { width: 110px; }
+.ch-fecha-envio { width: 160px; }
+.ch-proveedor { width: 160px; }
+.ch-det-reparacion { width: 210px; }
+.ch-hrs { width: 110px; }
+.ch-reingreso { width: 110px; }
+.ch-informe { width: 110px; }
+.ch-costo { width: 160px; }
+.ch-precio { width: 160px; }
+.ch-ov { width: 130px; }
+.ch-estado-ov { width: 130px; }
+.ch-fecha-entrega { width: 160px; }
+.ch-remito-entrega { width: 160px; }
+.ch-acciones { width: 110px; }
+
+/* Contenedor de filas */
+.rows-container {
+    overflow-y: auto;
+    max-height: calc(75vh - 96px);
+    min-width: min-content;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Fila de datos */
+.data-row {
+    display: flex;
+    height: 30px;
+    min-width: min-content;
+    border-bottom: 0px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.data-row:nth-child(even) {
+    background: #e8f4f8;
+}
+
+.data-row:nth-child(odd) {
+    background: #fff;
+}
+
+.data-row:hover {
+    background: #d4e9f7 !important;
+}
+
+/* Celda de datos */
+.cell {
+    padding: 12px 10px;
+    border-right: 1px solid #e0e0e0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 30px;
+    flex-shrink: 0;
+    background: inherit !important;
+}
+
+/* Celdas editables */
+.editable {
+    cursor: text;
+}
+
+.editable:focus {
+    outline: 2px solid #667eea;
+    background: inherit !important;
+}
+
+.editable-select {
+    cursor: pointer;
+}
+
+.editable-select:hover {
+    background: inherit !important;
+}
+
+/* Celdas de fecha */
+.editable-date {
+    cursor: pointer;
+    position: relative;
+}
+
+.editable-date:hover {
+    background: inherit !important;
+}
+
+/* Celdas de dinero */
+.editable-money {
+    cursor: pointer;
+    position: relative;
+}
+
+.editable-money:hover {
+    background: inherit !important;
+}
+
+.date-input {
+    width: 100%;
+    padding: 4px;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Filtros estilo Google Sheets */
+.filter-icon {
+    display: none;
+    margin-left: 5px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.filter-icon:hover {
+    opacity: 1;
+}
+
+.filter-icon.active {
+    display: inline;
+    color: #667eea;
+    opacity: 1;
+}
+
+.col-header.filterable {
+    cursor: pointer;
+    position: relative;
+}
+
+.col-header.filterable:hover {
+    background: #2c5f8d !important;
+}
+
+.filter-dropdown {
+    position: fixed;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 1000;
+    min-width: 250px;
+    max-width: 350px;
+    max-height: 450px;
+    overflow: hidden;
+    display: none;
+}
+
+.filter-dropdown.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-dropdown-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 15px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    user-select: none;
+}
+
+.filter-dropdown-header:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+}
+
+.filter-dropdown-close {
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0 5px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.filter-dropdown-close:hover {
+    opacity: 1;
+}
+
+.filter-dropdown-body {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.filter-search {
+    width: calc(100% - 20px);
+    padding: 8px;
+    margin: 10px 10px 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.filter-options {
+    padding: 5px;
+}
+
+.filter-option {
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.filter-option:hover {
+    background: #f0f0f0;
+}
+
+.filter-option input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.filter-actions {
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 5px;
+    justify-content: space-between;
+}
+
+.filter-actions button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.filter-actions .btn-aplicar {
+    background: #667eea;
+    color: white;
+}
+
+.filter-actions .btn-limpiar {
+    background: #f0f0f0;
+    color: #333;
+}
+
+/* Estado */
+.estado-cell {
+    cursor: pointer;
+}
+
+.estado-cell:hover {
+    background: inherit !important;
+}
+
+.estado-select {
+    width: 100%;
+    padding: 4px;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Observación con icono */
+.obs-cell {
+    cursor: pointer;
+    position: relative;
+    padding-right: 30px;
+}
+
+.obs-cell::after {
+    content: "🔍";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.obs-cell:hover {
+    background: #e0e0e0 !important;
+}
+
+/* Checkbox */
+.checkbox-cell {
+    justify-content: center;
+}
+
+.checkbox-cell input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Botón */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-save {
+    background: #667eea;
+    color: white;
+    padding: 6px 12px;
+    font-size: 1.2rem;
+}
+
+/* Links */
+.cell a {
+    color: #1e4d7b;
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.cell a:hover {
+    text-decoration: underline;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal de agregar equipo tiene z-index base */
+#modalAgregarEquipo {
+    z-index: 1000;
+}
+
+/* Modales selectores deben estar POR ENCIMA del modal de agregar equipo */
+#modalSelector,
+#modalNuevo {
+    z-index: 1200 !important; /* Mucho más alto para asegurar que estén encima */
+}
+
+.modal-content {
+    background: white;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-content-large {
+    max-width: 800px;
+    max-height: 85vh; /* Reducido para asegurar que el footer se vea */
+}
+
+.modal-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.close-x {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.close-x:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    max-height: calc(85vh - 140px); /* Altura modal - header - footer */
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0; /* Evitar que el footer se comprima */
+    background: white; /* Asegurar que sea visible */
+}
+
+.search-box {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+
+.search-box:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.close-btn {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    background: #444;
+}
+
+.obs-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.obs-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.selector-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.selector-item:hover {
+    background: #f0f0f0;
+}
+
+.selector-add {
+    padding: 12px;
+    cursor: pointer;
+    background: #e8f4f8;
+    font-weight: bold;
+    color: #1e4d7b;
+}
+
+.selector-add:hover {
+    background: #d0e7f0;
+}
+
+/* Estilos para formulario de agregar equipo */
+.form-field {
+    margin-bottom: 15px;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-field input[readonly] {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-grid-full {
+    grid-column: 1 / -1;
+}
+
+.selector-button {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selector-button:hover {
+    border-color: #667eea;
+    background: #f8f9fa;
+}
+
+.selector-button::after {
+    content: '▼';
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Botón de eliminar */
+.btn-delete {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.btn-delete:hover {
+    background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.5);
+}
+
+.btn-delete:active {
+    transform: scale(0.95);
+}
+
+/* Estilo general para botones de acción */
+.btn-action {
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+    margin: 0 0.2rem;
+}
+
+/* Botón de guardar mejorado */
+.btn-save {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.btn-save:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.5);
+}
+
+.btn-save:active {
+    transform: scale(0.95);
+}
+
+/* Fila modificada (cambios no guardados) */
+.data-row.modified {
+    border-left: 4px solid #ff9800 !important;
+}
+
+/* Indicador de cambios no guardados */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Celda no editable (viewer) */
+.cell.non-editable {
+    cursor: default !important;
+    background-color: #fafafa !important;
+}
+
+.cell.non-editable:hover {
+    background-color: #f5f5f5 !important;
+}
+
+/* RESPONSIVE - MÓVIL */
+@media (max-width: 768px) {
+    .table-container {
+        max-height: 65vh;
+    }
+    
+    .fixed-section {
+        width: 320px;
+    }
+    
+    .gh-dominio {
+        width: 320px;
+    }
+    
+    .ch-cliente { width: 150px; }
+    .ch-ost { width: 70px; }
+    .ch-estado { width: 100px; }
+    
+    .col-header {
+        padding: 10px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .group-header {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .data-row {
+        height: 50px;
+    }
+    
+    .cell {
+        height: 50px;
+        padding: 10px 8px;
+        font-size: 0.85rem;
+        background: inherit !important;
+    }
+    
+    .rows-container {
+        max-height: calc(65vh - 90px);
+    }
+    
+    .ch-fecha-ingreso { width: 110px; }
+    .ch-remito { width: 110px; }
+    .ch-tipo { width: 190px; }
+    .ch-marca { width: 130px; }
+    .ch-modelo { width: 130px; }
+    .ch-serie { width: 160px; }
+    .ch-accesorios { width: 180px; }
+    .ch-obs { width: 180px; }
+    .ch-fotos { width: 130px; }
+    .ch-prioridad { width: 90px; }
+    .ch-fecha-envio { width: 130px; }
+    .ch-proveedor { width: 130px; }
+    .ch-det-reparacion { width: 180px; }
+    .ch-hrs { width: 80px; }
+    .ch-reingreso { width: 90px; }
+    .ch-informe { width: 90px; }
+    .ch-costo { width: 130px; }
+    .ch-precio { width: 130px; }
+    .ch-ov { width: 110px; }
+    .ch-estado-ov { width: 110px; }
+    .ch-fecha-entrega { width: 130px; }
+    .ch-remito-entrega { width: 130px; }
+    .ch-acciones { width: 90px; }
+    
+    .gh-ingreso { width: 1480px; }
+    .gh-observacion { width: 280px; }
+    .gh-tecnico { width: 620px; }
+    .gh-comercial { width: 660px; }
+    .gh-acciones { width: 100px; }
+    
+    .btn-save {
+        padding: 6px 10px;
+        font-size: 1.1rem;
+    }
+    
+    .checkbox-cell input {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .editable, .editable-select, .estado-cell, .obs-cell {
+        height: 50px;
+        padding: 10px 8px;
+        background: inherit !important;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        max-height: 90vh;
+    }
+    
+    .modal-body {
+        padding: 15px;
+        max-height: calc(90vh - 140px); /* Altura - header - footer */
+    }
+    
+    .obs-textarea {
+        min-height: 180px;
+        font-size: 16px;
+    }
+    
+    .search-box {
+        font-size: 16px;
+        padding: 10px;
+    }
+    
+    input[type="text"],
+    input[type="date"] {
+        font-size: 16px;
+    }
+    
+    h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .btn-primary {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-container {
+        max-height: 60vh;
+    }
+    
+    .fixed-section {
+        width: 260px;
+    }
+    
+    .gh-dominio {
+        width: 260px;
+    }
+    
+    .ch-cliente { width: 120px; }
+    .ch-ost { width: 60px; }
+    .ch-estado { width: 80px; }
+    
+    .cell {
+        height: 45px;
+        padding: 8px 6px;
+        font-size: 0.8rem;
+        background: inherit !important;
+    }
+    
+    .data-row {
+        height: 45px;
+    }
+    
+    .col-header {
+        padding: 8px 6px;
+        font-size: 0.75rem;
+    }
+    
+    .group-header {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    h2 {
+        font-size: 1.1rem;
+    }
+    
+    .btn-primary {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .btn-save {
+        padding: 5px 8px;
+        font-size: 1rem;
+    }
+    
+    .rows-container {
+        max-height: calc(60vh - 86px);
+    }
+}
+
+/* Botón flotante de guardado general */
+.save-all-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999;
+    display: none; /* Oculto por defecto */
+    animation: slideInRight 0.3s;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.btn-save-all {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+}
+
+.btn-save-all:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
+}
+
+.btn-save-all:active {
+    transform: translateY(-1px);
+}
+
+.changes-badge {
+    background: white;
+    color: #4caf50;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    min-width: 25px;
+    text-align: center;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-top: 0.5rem; margin-bottom: 1rem; color: #1e4d7b;">🖥️ Gestión de Equipos</h2>
+<!-- FILTROS -->
+
+<!-- BOTONES DE ACCIÓN -->
+<div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <button class="btn btn-primary" onclick="toggleFiltros()" id="btnFiltros" style="background: #667eea;">
+        🔍 Activar Filtros
+    </button>
+    <button class="btn btn-primary" onclick="abrirModalAgregarEquipo()">
+        ➕ Agregar Nuevo Equipo
+    </button>
+    <span id="estadoFiltros" style="color: #666; font-size: 0.9rem;"></span>
+</div>
+
+<div class="table-container">
+    <div class="table-wrapper">
+        <!-- SECCIÓN FIJA -->
+        <div class="fixed-section">
+            <!-- Header de grupo fijo -->
+            <div class="group-headers">
+                <div class="group-header gh-dominio">📋 DATOS DE DOMINIO</div>
+            </div>
+            
+            <!-- Headers de columnas fijas -->
+            <div class="column-headers">
+                <div class="col-header ch-cliente filterable" data-column="cliente">
+                    Cliente <span class="filter-icon">▼</span>
+                </div>
+                <div class="col-header ch-ost filterable" data-column="ost" onclick="toggleOrdenOST(event)">
+                    OST <span class="filter-icon">▼</span><span id="iconOrdenOST" style="margin-left: 3px;">↓</span>
+                </div>
+                <div class="col-header ch-estado filterable" data-column="estado">
+                    Estado <span class="filter-icon">▼</span>
+                </div>
+            </div>
+            
+            <!-- Filas fijas -->
+            <div class="rows-container" id="fixedRows">
+                {% for equipo in equipos %}
+                <div class="data-row" data-row="{{ loop.index }}" data-id="{{ equipo.id }}">
+                    <!-- ✅ MODIFICADO: Cliente -->
+                    <div class="cell ch-cliente {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="cliente">{{ equipo.cliente or '' }}</div>
+                    
+                    <!-- OST (no editable) -->
+                    <div class="cell ch-ost">{{ equipo.ost or 'N/A' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Estado -->
+                    <div class="cell ch-estado estado-cell {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="estado" 
+                         data-type="estado"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.estado or 'Pendiente' }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SECCIÓN SCROLLABLE -->
+        <div class="scrollable-section" id="scrollableSection">
+            <!-- Headers de grupo scrollables -->
+            <div class="group-headers">
+                <div class="group-header gh-ingreso">📥 DETALLE DE INGRESO</div>
+                <div class="group-header gh-observacion"> DETALLE DE OBSERVACIÓN</div>
+                <div class="group-header gh-tecnico"> DETALLES TÉCNICOS Y DE SEGUIMIENTO</div>
+                <div class="group-header gh-comercial"> DETALLES COMERCIALES</div>
+                <div class="group-header gh-acciones"> ⚙️ </div>
+            </div>
+            
+            <!-- Headers de columnas scrollables -->
+            <div class="column-headers">
+                <div class="col-header ch-fecha-ingreso">Fecha Ingreso</div>
+                <div class="col-header ch-remito">Remito</div>
+                <div class="col-header ch-tipo filterable" data-column="tipo_equipo">
+                    Tipo <span class="filter-icon">▼</span>
+                </div>
+                <div class="col-header ch-marca filterable" data-column="marca">
+                    Marca <span class="filter-icon">▼</span>
+                </div>
+                <div class="col-header ch-modelo">Modelo</div>
+                <div class="col-header ch-serie filterable" data-column="numero_serie">
+                    Nº Serie <span class="filter-icon">▼</span>
+                </div>
+                <div class="col-header ch-accesorios">Accesorios</div>
+                <div class="col-header ch-obs">Obs. Ingreso</div>
+                <div class="col-header ch-fotos">Fotos</div>
+                <div class="col-header ch-prioridad filterable" data-column="prioridad">
+                    Prioridad <span class="filter-icon">▼</span>
+                </div>
+                <div class="col-header ch-fecha-envio">Fecha Envío</div>
+                <div class="col-header ch-proveedor">Proveedor</div>
+                <div class="col-header ch-det-reparacion">Det. Reparación</div>
+                <div class="col-header ch-hrs">Hrs</div>
+                <div class="col-header ch-reingreso">Reingreso</div>
+                <div class="col-header ch-informe">Informe</div>
+                <div class="col-header ch-costo">Costo</div>
+                <div class="col-header ch-precio">Precio</div>
+                <div class="col-header ch-ov">OV</div>
+                <div class="col-header ch-estado-ov">Estado OV</div>
+                <div class="col-header ch-fecha-entrega">Fecha Entrega</div>
+                <div class="col-header ch-remito-entrega">Remito Entrega</div>
+                <div class="col-header ch-acciones">Acciones</div>
+            </div>
+            
+            <!-- Filas scrollables -->
+            <div class="rows-container" id="scrollableRows">
+                {% for equipo in equipos %}
+                <div class="data-row" data-row="{{ loop.index }}" data-id="{{ equipo.id }}">
+                    <!-- ✅ MODIFICADO: Fecha Ingreso -->
+                    <div class="cell ch-fecha-ingreso {% if current_user.has_permission('edit') %}editable-date{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="fecha_ingreso"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.fecha_ingreso.strftime('%d/%m/%Y') if equipo.fecha_ingreso else 'N/A' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Remito -->
+                    <div class="cell ch-remito {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="remito">{{ equipo.remito or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Tipo -->
+                    <div class="cell ch-tipo {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="tipo_equipo" 
+                         data-type="tipo"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.tipo_equipo or 'Seleccionar' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Marca -->
+                    <div class="cell ch-marca {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="marca" 
+                         data-type="marca"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.marca or 'Seleccionar' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Modelo -->
+                    <div class="cell ch-modelo {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="modelo" 
+                         data-type="modelo"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.modelo or 'Seleccionar' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Número de Serie -->
+                    <div class="cell ch-serie {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="numero_serie">{{ equipo.numero_serie or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Accesorios -->
+                    <div class="cell ch-accesorios {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="accesorios">{{ equipo.accesorios or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Observación (celda especial con modal) -->
+                    <div class="cell ch-obs obs-cell {% if not current_user.has_permission('edit') %}non-editable{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-obs="{{ equipo.observacion_ingreso or '' }}"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ (equipo.observacion_ingreso[:25] + '...') if equipo.observacion_ingreso and equipo.observacion_ingreso|length > 25 else (equipo.observacion_ingreso or '') }}
+                    </div>
+                    
+                    <!-- Fotos (no editable) -->
+                    <div class="cell ch-fotos">
+                        {% set fotos = archivos|selectattr('numero_serie', 'equalto', equipo.numero_serie)|selectattr('categoria', 'equalto', 'falla')|list %}
+                        {% if fotos %}{% for foto in fotos %}<a href="{{ foto.url_cloudinary }}" target="_blank">🖼️</a>{% endfor %}{% else %}-{% endif %}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Prioridad -->
+                    <div class="cell ch-prioridad {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="prioridad" 
+                         data-type="prioridad"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.prioridad or 'Seleccionar' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Fecha Envío -->
+                    <div class="cell ch-fecha-envio {% if current_user.has_permission('edit') %}editable-date{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="fecha_envio_proveedor"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.fecha_envio.strftime('%d/%m/%Y') if equipo.fecha_envio else 'N/A' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Proveedor -->
+                    <div class="cell ch-proveedor {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="proveedor">{{ equipo.proveedor or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Detalle Reparación -->
+                    <div class="cell ch-det-reparacion {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="detalle_reparacion">{{ equipo.detalles_reparacion or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Horas -->
+                    <div class="cell ch-hrs {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="horas_trabajo">{{ equipo.horas_trabajo or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Reingreso (checkbox) -->
+                    <div class="cell ch-reingreso checkbox-cell">
+                        <input type="checkbox" 
+                               data-id="{{ equipo.id }}" 
+                               data-field="reingreso" 
+                               {{ 'checked' if equipo.reingreso else '' }}
+                               {% if not current_user.has_permission('edit') %}disabled{% endif %}>
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Informe (checkbox) -->
+                    <div class="cell ch-informe checkbox-cell">
+                        <input type="checkbox" 
+                               data-id="{{ equipo.id }}" 
+                               data-field="informe_tecnico" 
+                               {{ 'checked' if equipo.informe_tecnico else '' }}
+                               {% if not current_user.has_permission('edit') %}disabled{% endif %}>
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Costo -->
+                    <div class="cell ch-costo {% if current_user.has_permission('edit') %}editable-money{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="costo_reparacion"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ ('$' + equipo.costo_reparacion|string) if equipo.costo_reparacion else 'N/A' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Precio -->
+                    <div class="cell ch-precio {% if current_user.has_permission('edit') %}editable-money{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="precio_cliente"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ ('$' + equipo.precio_cliente|string) if equipo.precio_cliente else 'N/A' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: OV -->
+                    <div class="cell ch-ov {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="numero_ov">{{ equipo.numero_ov or '' }}</div>
+                    
+                    <!-- ✅ MODIFICADO: Estado OV -->
+                    <div class="cell ch-estado-ov {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="estado_ov" 
+                         data-type="estado_ov"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.estado_ov or 'Seleccionar' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Fecha Entrega -->
+                    <div class="cell ch-fecha-entrega {% if current_user.has_permission('edit') %}editable-date{% endif %}" 
+                         data-id="{{ equipo.id }}" 
+                         data-field="fecha_entrega"
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}>
+                        {{ equipo.fecha_entrega.strftime('%d/%m/%Y') if equipo.fecha_entrega else 'N/A' }}
+                    </div>
+                    
+                    <!-- ✅ MODIFICADO: Remito Entrega -->
+                    <div class="cell ch-remito-entrega {% if current_user.has_permission('edit') %}editable{% endif %}" 
+                         {% if current_user.has_permission('edit') %}contenteditable="true"{% endif %}
+                         {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
+                         data-id="{{ equipo.id }}" 
+                         data-field="remito_entrega">{{ equipo.remito_entrega or '' }}</div>
+                    
+                    <!-- ✅ COLUMNA DE ACCIONES (YA ESTABA CORRECTA) -->
+                    <div class="cell ch-acciones" style="justify-content: center; gap: 0.5rem; display: flex; align-items: center;">
+                        {% if current_user.has_permission('edit') %}
+                        <button class="btn-action btn-save" 
+                                onclick="guardarCambios({{ equipo.id }})" 
+                                title="Guardar cambios">
+                            💾
+                        </button>
+                        {% endif %}
+                        
+                        {% if current_user.has_permission('delete') %}
+                        <button class="btn-action btn-delete" 
+                                onclick="eliminarEquipo({{ equipo.id }}, '{{ equipo.ost }}')" 
+                                title="Eliminar equipo">
+                            🗑️
+                        </button>
+                        {% endif %}
+                        
+                        {% if not current_user.has_permission('edit') and not current_user.has_permission('delete') %}
+                        <span style="color: #999; font-size: 0.85rem;">👁️ Solo lectura</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Observación -->
+<div id="modalObs" class="modal">
+    <div class="modal-content modal-content-large">
+        <div class="modal-header">
+            <h3>📝 Observación de Ingreso - OST: <span id="obsOST"></span></h3>
+            <button class="close-x" onclick="cerrarObs()">×</button>
+        </div>
+        <div class="modal-body">
+            <textarea id="obsText" class="obs-textarea" placeholder="Escriba la observación..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="close-btn" onclick="cerrarObs()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardarObs()">💾 Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Selector -->
+<div id="modalSelector" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="selectorTitle">Seleccionar</h3>
+            <button class="close-x" onclick="cerrarSelector()">×</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="selectorSearch" class="search-box" placeholder="Buscar...">
+            <div id="selectorList"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="close-btn" onclick="cerrarSelector()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo -->
+<div id="modalNuevo" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="nuevoTitle">Agregar Nuevo</h3>
+            <button class="close-x" onclick="cerrarNuevo()">×</button>
+        </div>
+        <form id="formNuevo">
+            <div class="modal-body">
+                <input type="text" id="nuevoInput" class="search-box" placeholder="Nombre..." required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="close-btn" onclick="cerrarNuevo()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Agregar Equipo -->
+<div id="modalAgregarEquipo" class="modal">
+    <div class="modal-content modal-content-large">
+        <div class="modal-header">
+            <h3>➕ Agregar Nuevo Equipo</h3>
+            <button class="close-x" onclick="cerrarModalAgregarEquipo()">×</button>
+        </div>
+        <form id="formAgregarEquipo">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Cliente *</label>
+                        <input type="text" name="cliente" id="cliente" placeholder="Nombre del cliente" required>
+                    </div>
+                    <div class="form-field">
+                        <label>OST (Auto) *</label>
+                        <input type="text" name="ost" id="ost" placeholder="Se generará automáticamente" readonly>
+                    </div>
+                    <div class="form-field">
+                        <label>Fecha de Ingreso *</label>
+                        <input type="date" name="fecha_ingreso" id="fecha_ingreso" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Remito</label>
+                        <input type="text" name="remito" id="remito" placeholder="Número de remito">
+                    </div>
+                    <div class="form-field">
+                        <label>Tipo de Equipo *</label>
+                        <button type="button" class="selector-button" id="btnTipoEquipo" onclick="abrirSelectorForm('tipo')">
+                            <span id="tipoEquipoText">Seleccionar tipo</span>
+                        </button>
+                        <input type="hidden" name="tipo_equipo" id="tipo_equipo">
+                    </div>
+                    <div class="form-field">
+                        <label>Marca</label>
+                        <button type="button" class="selector-button" id="btnMarca" onclick="abrirSelectorForm('marca')">
+                            <span id="marcaText">Seleccionar marca</span>
+                        </button>
+                        <input type="hidden" name="marca" id="marca">
+                    </div>
+                    <div class="form-field">
+                        <label>Modelo</label>
+                        <button type="button" class="selector-button" id="btnModelo" onclick="abrirSelectorForm('modelo')">
+                            <span id="modeloText">Seleccionar modelo</span>
+                        </button>
+                        <input type="hidden" name="modelo" id="modelo">
+                    </div>
+                    <div class="form-field">
+                        <label>Número de Serie</label>
+                        <input type="text" name="numero_serie" id="numero_serie" placeholder="Número de serie">
+                    </div>
+                    <div class="form-field">
+                        <label>Prioridad</label>
+                        <button type="button" class="selector-button" id="btnPrioridad" onclick="abrirSelectorForm('prioridad')">
+                            <span id="prioridadText">Seleccionar prioridad</span>
+                        </button>
+                        <input type="hidden" name="prioridad" id="prioridad">
+                    </div>
+                    <div class="form-field form-grid-full">
+                        <label>Accesorios</label>
+                        <input type="text" name="accesorios" id="accesorios" placeholder="Cables, sensores, etc.">
+                    </div>
+                    <div class="form-field form-grid-full">
+                        <label>Observación de Ingreso</label>
+                        <textarea name="observacion_ingreso" id="observacion_ingreso" class="obs-textarea" style="min-height: 100px;" placeholder="Descripción del problema o falla..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="close-btn" onclick="cerrarModalAgregarEquipo()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">💾 Guardar Equipo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if current_user.has_permission('edit') %}
+<div class="save-all-container" id="saveAllContainer">
+    <button class="btn-save-all pulse" onclick="guardarTodosLosCambios()">
+        💾 Guardar Todos los Cambios
+        <span class="changes-badge" id="changesBadge">0</span>
+    </button>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sincronizar scroll vertical entre secciones
+const fixedRows = document.getElementById('fixedRows');
+const scrollableRows = document.getElementById('scrollableRows');
+const scrollableSection = document.getElementById('scrollableSection');
+
+fixedRows.addEventListener('scroll', () => {
+    scrollableRows.scrollTop = fixedRows.scrollTop;
+});
+
+scrollableRows.addEventListener('scroll', () => {
+    fixedRows.scrollTop = scrollableRows.scrollTop;
+});
+
+// Ocultar indicador de scroll cuando el usuario hace scroll
+scrollableSection.addEventListener('scroll', function() {
+    if (this.scrollLeft > 20) {
+        this.classList.add('scrolled');
+    } else {
+        this.classList.remove('scrolled');
+    }
+});
+
+// Hover sincronizado
+document.querySelectorAll('.data-row').forEach(row => {
+    const rowNum = row.getAttribute('data-row');
+    row.addEventListener('mouseenter', () => {
+        document.querySelectorAll(`[data-row="${rowNum}"]`).forEach(r => {
+            r.style.background = '#d4e9f7';
+        });
+    });
+    row.addEventListener('mouseleave', () => {
+        document.querySelectorAll(`[data-row="${rowNum}"]`).forEach(r => {
+            r.style.background = '';
+        });
+    });
+});
+
+// Modal Observación
+let obsCell, obsId;
+
+document.querySelectorAll('.obs-cell').forEach(cell => {
+    cell.addEventListener('click', function() {
+        obsCell = this;
+        obsId = this.getAttribute('data-id');
+        const obs = this.getAttribute('data-obs');
+        
+        const rowNum = this.closest('.data-row').getAttribute('data-row');
+        const ostCell = document.querySelector(`.fixed-section [data-row="${rowNum}"] .ch-ost`);
+        const ost = ostCell ? ostCell.textContent : 'N/A';
+        
+        document.getElementById('obsText').value = obs || '';
+        document.getElementById('obsOST').textContent = ost;
+        document.getElementById('modalObs').style.display = 'flex';
+    });
+});
+
+function cerrarObs() {
+    document.getElementById('modalObs').style.display = 'none';
+}
+
+function guardarObs() {
+    const texto = document.getElementById('obsText').value;
+    fetch(`/api/equipo/${obsId}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({observacion_ingreso: texto})
+    }).then(r => r.json()).then(d => {
+        if(d.success) {
+            const preview = texto.length > 25 ? texto.substring(0, 25) + '...' : texto;
+            obsCell.textContent = preview;
+            obsCell.setAttribute('data-obs', texto);
+            alert('✅ Guardado');
+            cerrarObs();
+        }
+    });
+}
+
+document.getElementById('modalObs').addEventListener('click', e => {
+    if(e.target.id === 'modalObs') cerrarObs();
+});
+
+// Celdas editables
+document.querySelectorAll('.editable').forEach(cell => {
+    let original = cell.textContent.trim();
+    cell.addEventListener('focus', () => { original = cell.textContent.trim(); });
+    cell.addEventListener('blur', function() {
+        const nuevo = this.textContent.trim();
+        if(nuevo !== original) {
+            const id = this.getAttribute('data-id');
+            const field = this.getAttribute('data-field');
+            fetch(`/api/equipo/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({[field]: nuevo})
+            }).then(r => r.json()).then(d => {
+                if(d.success) console.log('✅ Guardado');
+            });
+        }
+    });
+});
+
+// Checkboxes
+document.querySelectorAll('.checkbox-cell input').forEach(cb => {
+    cb.addEventListener('change', function() {
+        const id = this.getAttribute('data-id');
+        const field = this.getAttribute('data-field');
+        fetch(`/api/equipo/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({[field]: this.checked})
+        }).then(r => r.json()).then(d => {
+            if(d.success) alert('✅ Guardado');
+        });
+    });
+});
+
+// Estado - Usando selector como los demás
+document.querySelectorAll('.estado-cell').forEach(cell => {
+    cell.addEventListener('click', function() {
+        const estados = ['Pendiente', 'En Proceso', 'Completado', 'Entregado', 'Cancelado'];
+        abrirSelector(this, 'estado', estados);
+    });
+});
+
+function guardar(id) {
+    alert('💾 Los cambios se guardan automáticamente');
+}
+
+// Selector
+const TIPOS = ["Analizador de Gases","Balanza","Bomba de Infusión","Cama Eléctrica","Capnógrafo","Capnómetro","Cardiotocógrafo","Cauterio","Centrífuga","Concentrador de Oxígeno","Desfibrilador","Detector Fetal","Doppler","Electrocardiografo","Electrocardiógrafo","Emisor de Ultrasonido","Espirómetro","Estetoscopio","Fototerapia","Lámpara Quirúrgica","Línea Arterial","Microscopio","Monitor","Monitor Fetal","Monitor Multiparamétrico","Nebulizador","Negatoscopio","Otoscopio","Oxímetro","PC","Pesa","Purificador de Aire","Respirador","Simulador","Simulador Materno-Fetal","Soporte Ventilación","Tensiometro Adulto","Tensiómetro Pediátrico","Ventilador"];
+const MARCAS = ["Abbot","Adox","Agilent","Air Sep","Aitecs","Akonic","Alison","Apema","Arcomed","Argas","Argimed","Argus","Arrow","ATI Audiscan II","Bamec","BCI","Bioamerican Science","Biocare","Biolight","Bistos","BLT","BMC","Braun","CAM","Cardiomax","Cardioprint","Cardiotécnica","Cavour","CEC","Cegens","Choice","Codemaster","Colden","Comen","Confort Cough","Contec","Covidien","Daiwha","Dasa","Datascope","Datex Ohmeda","Denver Instruments","Desconocido","Dixtal","Dong Jiang","Dräger","Dyne","Eccosur","Edan","Edan/Leex","Ekhoson","Electromedik","Enmind","Enray","Esaote","Everflo","EyM","Faeta","Feas","Fisher&Paykel","For You","Fukuda","General Electric","General Medictech","Genérico","Goldway","Healthdyne","HP","Humidias","Infant Star","Innomed","Innovo","LADIE","Leex","Lifotronic","Long Fian","Lovego","Lowentein","Maquet","Massimo","Maverick","Maxtec","MDV","Med Captain","Med joy","Medifusion","Meditech","Medix","Medrena","Medtronic","Microelectrónica","Micromedical","Mindray","Minicomp","MUX","N/E","Natal Care","Nellcor","Neumovent","Newton","Nihon Kohden","Nikon","Ohmeda","Philips","Pmed","Prestige","Presvac","Radian QBio","Respironics","Roma","San-Jor","Sechrist","Silfab","SK","SLE","Suncare","Sunmed","Super Star","Systel","Takaoka","Unimed","UTAH","Valleylab","Vicking","View Sonic","WechAllyn","WEM","Yuwell"];
+const MODELOS = ["60H","600 S","7B-1","7E-C","7E-G","7F-10","7F-5","7F-5 Mini","9F-5","Autocat II","Autocat II Wave","Beneheart R3","Biomax 500","BT-350","BT-400","BT-500","C-12R","Capnomac","Capnomac Ultima","Cardiolife","Cardiosuny","Caris Plus","CC20","Cloud","CMS8000","CO2-M01","Covidien","D3","DB9","Desconocido","EN-S7","EN-V7","Evergo","Fabius","Fabius Plus","Fabius Plus XL","Force","Graph","Graphnet TS","HC100","Heart Start","HT-109","iE-101","iE-300","IM8B","iMEC10","Infinity Vista","Jay-5","Jay-5Q","LG103","Libra","M3A","MR810","NP-100","NP-600","OXI-3 Plus","Prisma Vent 40","Prisma Vent 50","Puritan Bennett 560","RG-401","RG-401 Plus","RG-501","RG-501 Plus","S3","Scio Four","SP-50","SP-50 Pro","Spirit 3","Star 8000","System 97","System 97e","Trilogy","Vapor 2000","Vista 120","VP-50","VP-50 Pro","YH-350","YH-360","YH-550","YH-560","YH-725","YH-730","5342","5346"];
+const PRIORIDADES = ["Baja","Normal","En la semana","Importante","Urgente"];
+const ESTADOS = ["Pendiente","Aprobación pendiente","A presupuestar", "Baja técnica", "En curso","Finalizado", "Listo para entregar","Repuestos","Tercerizado","L/E - Faltantes"];
+const ESTADOS_OV = ["Aprobado","Garantía","N/A","No se repara","Presupuesto"];
+
+let selCell, selType, selList, isFormSelector = false;
+
+function abrirSelector(cell, type, items) {
+    selCell = cell;
+    selType = type;
+    selList = items;
+    isFormSelector = false;
+    const titles = {tipo:'Tipo de Equipo', marca:'Marca', modelo:'Modelo', prioridad:'Prioridad'};
+    document.getElementById('selectorTitle').textContent = titles[type];
+    document.getElementById('selectorSearch').value = '';
+    renderSelector(items);
+    document.getElementById('modalSelector').style.display = 'flex';
+}
+
+function abrirSelectorForm(type) {
+    selType = type;
+    isFormSelector = true;
+    const lists = {tipo:TIPOS, marca:MARCAS, modelo:MODELOS, prioridad:PRIORIDADES, estado:ESTADOS, estado_ov:ESTADOS_OV};
+    selList = lists[type];
+    const titles = {tipo:'Tipo de Equipo', marca:'Marca', modelo:'Modelo', prioridad:'Prioridad', estado:'Estado', estado_ov:'Estado OV'};
+    document.getElementById('selectorTitle').textContent = titles[type];
+    document.getElementById('selectorSearch').value = '';
+    renderSelector(selList);
+    document.getElementById('modalSelector').style.display = 'flex';
+}
+
+function cerrarSelector() {
+    document.getElementById('modalSelector').style.display = 'none';
+}
+
+function renderSelector(items) {
+    const list = document.getElementById('selectorList');
+    list.innerHTML = '';
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'selector-item';
+        div.textContent = item;
+        div.onclick = () => seleccionar(item);
+        list.appendChild(div);
+    });
+    
+    // Solo mostrar "Agregar nuevo" si NO es prioridad, estado o estado_ov (tienen valores fijos)
+    if(selType !== 'prioridad' && selType !== 'estado' && selType !== 'estado_ov') {
+        const add = document.createElement('div');
+        add.className = 'selector-add';
+        add.innerHTML = '➕ <strong>Agregar nuevo...</strong>';
+        add.onclick = () => {
+            cerrarSelector();
+            document.getElementById('nuevoTitle').textContent = `Agregar ${selType}`;
+            document.getElementById('modalNuevo').style.display = 'flex';
+        };
+        list.appendChild(add);
+    }
+}
+
+function seleccionar(valor) {
+    if(isFormSelector) {
+        // Estamos en el formulario de agregar equipo
+        // Actualizar según el tipo
+        if(selType === 'prioridad') {
+            document.getElementById('prioridad').value = valor;
+            document.getElementById('prioridadText').textContent = valor;
+        }
+        else if(selType === 'tipo') {
+            document.getElementById('tipo_equipo').value = valor;
+            document.getElementById('tipoEquipoText').textContent = valor;
+        }
+        else if(selType === 'marca') {
+            document.getElementById('marca').value = valor;
+            document.getElementById('marcaText').textContent = valor;
+        }
+        else if(selType === 'modelo') {
+            document.getElementById('modelo').value = valor;
+            document.getElementById('modeloText').textContent = valor;
+        }
+    } else {
+        // Estamos editando una celda existente
+        if(!selCell) return;
+        const id = selCell.getAttribute('data-id');
+        const field = selCell.getAttribute('data-field');
+        selCell.textContent = valor;
+        fetch(`/api/equipo/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({[field]: valor})
+        }).then(r => r.json()).then(d => {
+            if(d.success) console.log('✅');
+        });
+    }
+    cerrarSelector();
+}
+
+document.getElementById('selectorSearch').addEventListener('input', function() {
+    const term = this.value.toLowerCase();
+    const filtered = selList.filter(i => i.toLowerCase().includes(term));
+    renderSelector(filtered);
+});
+
+document.querySelectorAll('.editable-select').forEach(cell => {
+    cell.addEventListener('click', function() {
+        const type = this.getAttribute('data-type');
+        const lists = {tipo:TIPOS, marca:MARCAS, modelo:MODELOS, prioridad:PRIORIDADES, estado:ESTADOS, estado_ov:ESTADOS_OV};
+        abrirSelector(this, type, lists[type]);
+    });
+});
+
+// Celdas de fecha con modal mejorado
+document.querySelectorAll('.editable-date').forEach(cell => {
+    cell.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const field = this.getAttribute('data-field');
+        const textoActual = this.textContent.trim();
+        
+        // Crear modal de fecha
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>📅 Seleccionar Fecha</h3>
+                    <button class="close-x" onclick="this.closest('.modal').remove()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Fecha:</label>
+                        <input type="date" id="tempDateInput" class="search-box" style="margin-bottom: 0;">
+                    </div>
+                    <div style="text-align: center; color: #666; margin: 10px 0;">- o -</div>
+                    <button type="button" class="btn btn-primary" id="btnNA" style="width: 100%; background: #999;">
+                        N/A (Sin fecha)
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="close-btn" onclick="this.closest('.modal').remove()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarFecha">💾 Guardar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Convertir fecha actual si existe (formato dd/mm/yyyy a yyyy-mm-dd)
+        const inputFecha = modal.querySelector('#tempDateInput');
+        if(textoActual && textoActual !== 'N/A') {
+            const partes = textoActual.split('/');
+            if(partes.length === 3) {
+                inputFecha.value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+            }
+        }
+        
+        // Botón N/A
+        modal.querySelector('#btnNA').addEventListener('click', function() {
+            fetch(`/api/equipo/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({[field]: null})
+            }).then(r => r.json()).then(d => {
+                if(d.success) {
+                    cell.textContent = 'N/A';
+                    modal.remove();
+                    console.log('✅ Fecha guardada como N/A');
+                }
+            });
+        });
+        
+        // Botón Guardar
+        modal.querySelector('#btnGuardarFecha').addEventListener('click', function() {
+            const valor = inputFecha.value;
+            if(valor) {
+                const [year, month, day] = valor.split('-');
+                const fechaMostrar = `${day}/${month}/${year}`;
+                
+                fetch(`/api/equipo/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({[field]: valor})
+                }).then(r => r.json()).then(d => {
+                    if(d.success) {
+                        cell.textContent = fechaMostrar;
+                        modal.remove();
+                        console.log('✅ Fecha guardada');
+                    }
+                });
+            } else {
+                alert('⚠️ Por favor selecciona una fecha o marca N/A');
+            }
+        });
+        
+        // Cerrar al hacer clic fuera
+        modal.addEventListener('click', function(e) {
+            if(e.target === modal) {
+                modal.remove();
+            }
+        });
+    });
+});
+
+// Celdas de dinero con modal
+document.querySelectorAll('.editable-money').forEach(cell => {
+    cell.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const field = this.getAttribute('data-field');
+        const textoActual = this.textContent.trim();
+        
+        // Crear modal de dinero
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>💰 Ingresar Monto</h3>
+                    <button class="close-x" onclick="this.closest('.modal').remove()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Monto ($):</label>
+                        <input type="number" id="tempMoneyInput" class="search-box" placeholder="0.00" step="0.01" style="margin-bottom: 0;">
+                    </div>
+                    <div style="text-align: center; color: #666; margin: 10px 0;">- o -</div>
+                    <button type="button" class="btn btn-primary" id="btnMoneyNA" style="width: 100%; background: #999;">
+                        N/A (Sin monto)
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="close-btn" onclick="this.closest('.modal').remove()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarMoney">💾 Guardar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Extraer valor numérico si existe
+        const inputMoney = modal.querySelector('#tempMoneyInput');
+        if(textoActual && textoActual !== 'N/A') {
+            const valorNumerico = textoActual.replace('$', '').replace(',', '').trim();
+            if(valorNumerico) {
+                inputMoney.value = valorNumerico;
+            }
+        }
+        
+        inputMoney.focus();
+        
+        // Botón N/A
+        modal.querySelector('#btnMoneyNA').addEventListener('click', function() {
+            fetch(`/api/equipo/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({[field]: null})
+            }).then(r => r.json()).then(d => {
+                if(d.success) {
+                    cell.textContent = 'N/A';
+                    modal.remove();
+                    console.log('✅ Monto guardado como N/A');
+                }
+            });
+        });
+        
+        // Botón Guardar
+        modal.querySelector('#btnGuardarMoney').addEventListener('click', function() {
+            const valor = inputMoney.value;
+            if(valor && valor !== '') {
+                const valorNumerico = parseFloat(valor);
+                if(!isNaN(valorNumerico)) {
+                    fetch(`/api/equipo/${id}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({[field]: valorNumerico.toString()})
+                    }).then(r => r.json()).then(d => {
+                        if(d.success) {
+                            cell.textContent = '$' + valorNumerico.toFixed(2);
+                            modal.remove();
+                            console.log('✅ Monto guardado');
+                        }
+                    });
+                } else {
+                    alert('⚠️ Por favor ingresa un número válido');
+                }
+            } else {
+                alert('⚠️ Por favor ingresa un monto o marca N/A');
+            }
+        });
+        
+        // Cerrar al hacer clic fuera
+        modal.addEventListener('click', function(e) {
+            if(e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Enter para guardar
+        inputMoney.addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                modal.querySelector('#btnGuardarMoney').click();
+            }
+        });
+    });
+});
+
+document.getElementById('modalSelector').onclick = e => {
+    if(e.target.id === 'modalSelector') cerrarSelector();
+};
+
+// Modal Nuevo
+function cerrarNuevo() {
+    document.getElementById('modalNuevo').style.display = 'none';
+    document.getElementById('formNuevo').reset();
+}
+
+document.getElementById('modalNuevo').onclick = e => {
+    if(e.target.id === 'modalNuevo') cerrarNuevo();
+};
+
+document.getElementById('formNuevo').onsubmit = e => {
+    e.preventDefault();
+    const nuevo = document.getElementById('nuevoInput').value.trim();
+    if(!nuevo) return;
+    
+    if(selType === 'tipo') TIPOS.push(nuevo);
+    else if(selType === 'marca') MARCAS.push(nuevo);
+    else if(selType === 'modelo') MODELOS.push(nuevo);
+    
+    if(isFormSelector) {
+        // Actualizar el formulario
+        if(selType === 'tipo') {
+            document.getElementById('tipo_equipo').value = nuevo;
+            document.getElementById('tipoEquipoText').textContent = nuevo;
+        } else if(selType === 'marca') {
+            document.getElementById('marca').value = nuevo;
+            document.getElementById('marcaText').textContent = nuevo;
+        } else if(selType === 'modelo') {
+            document.getElementById('modelo').value = nuevo;
+            document.getElementById('modeloText').textContent = nuevo;
+        }
+    } else {
+        // Actualizar celda existente
+        if(selCell) {
+            const id = selCell.getAttribute('data-id');
+            const field = selCell.getAttribute('data-field');
+            fetch(`/api/equipo/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({[field]: nuevo})
+            }).then(r => r.json()).then(d => {
+                if(d.success) {
+                    selCell.textContent = nuevo;
+                    alert('✅ Agregado');
+                }
+            });
+        }
+    }
+    cerrarNuevo();
+};
+
+// Modal Agregar Equipo
+function abrirModalAgregarEquipo() {
+    // Obtener el próximo número OST
+    fetch('/api/proximo-ost')
+        .then(r => r.json())
+        .then(d => {
+            if(d.success) {
+                document.getElementById('ost').value = d.proximo_ost;
+            }
+        });
+    
+    // Establecer fecha actual
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha_ingreso').value = hoy;
+    
+    document.getElementById('modalAgregarEquipo').style.display = 'flex';
+}
+
+function cerrarModalAgregarEquipo() {
+    document.getElementById('modalAgregarEquipo').style.display = 'none';
+    document.getElementById('formAgregarEquipo').reset();
+    // Resetear textos de selectores
+    document.getElementById('tipoEquipoText').textContent = 'Seleccionar tipo';
+    document.getElementById('marcaText').textContent = 'Seleccionar marca';
+    document.getElementById('modeloText').textContent = 'Seleccionar modelo';
+    document.getElementById('prioridadText').textContent = 'Seleccionar prioridad';
+}
+
+document.getElementById('modalAgregarEquipo').addEventListener('click', e => {
+    if(e.target.id === 'modalAgregarEquipo') cerrarModalAgregarEquipo();
+});
+
+document.getElementById('formAgregarEquipo').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Validar campos requeridos
+    if(!data.cliente || !data.cliente.trim()) {
+        alert('⚠️ El campo Cliente es obligatorio');
+        return;
+    }
+    
+    if(!data.fecha_ingreso) {
+        alert('⚠️ La Fecha de Ingreso es obligatoria');
+        return;
+    }
+    
+    if(!data.tipo_equipo) {
+        alert('⚠️ Debe seleccionar un Tipo de Equipo');
+        return;
+    }
+    
+    // Mostrar mensaje de carga
+    const loadingMsg = document.createElement('div');
+    loadingMsg.id = 'loadingMsg';
+    loadingMsg.style.cssText = 
+        'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);' +
+        'background: white; padding: 2rem; border-radius: 12px;' +
+        'box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 10000; text-align: center;';
+    loadingMsg.innerHTML = '<h3>💾 Guardando equipo...</h3><p>Por favor espera</p>';
+    document.body.appendChild(loadingMsg);
+    
+    console.log('📤 Enviando datos:', data);
+    
+    fetch('/api/equipos', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        console.log('📥 Respuesta recibida:', response.status);
+        
+        // Si la respuesta no es JSON, mostrar el contenido
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Error ${response.status}: ${text.substring(0, 200)}`);
+            });
+        }
+        
+        return response.json();
+    })
+    .then(result => {
+        console.log('✅ Resultado:', result);
+        
+        const msg = document.getElementById('loadingMsg');
+        if (msg) document.body.removeChild(msg);
+        
+        if (result.success) {
+            alert('✅ Equipo agregado correctamente con OST: ' + result.ost);
+            cerrarModalAgregarEquipo();
+            location.reload();
+        } else {
+            alert('❌ Error al agregar equipo: ' + (result.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error completo:', error);
+        
+        const msg = document.getElementById('loadingMsg');
+        if (msg) document.body.removeChild(msg);
+        
+        alert('❌ Error al agregar equipo:\n\n' + error.message);
+    });
+});
+    // Sistema de filtros estilo Google Sheets (FUERA del addEventListener)
+    let filtrosActivos = false;
+    let filtrosAplicados = {};
+
+    function toggleFiltros() {
+        filtrosActivos = !filtrosActivos;
+        const btn = document.getElementById('btnFiltros');
+        const icons = document.querySelectorAll('.filter-icon');
+        const estado = document.getElementById('estadoFiltros');
+        
+        if (filtrosActivos) {
+            btn.textContent = '🔍 Desactivar Filtros';
+            btn.style.background = '#f44336';
+            icons.forEach(icon => icon.classList.add('active'));
+            estado.textContent = 'Filtros activados';
+            estado.style.color = '#667eea';
+        } else {
+            btn.textContent = '🔍 Activar Filtros';
+            btn.style.background = '#667eea';
+            icons.forEach(icon => icon.classList.remove('active'));
+            estado.textContent = '';
+            cerrarTodosDropdowns();
+            limpiarTodosFiltros();
+        }
+    }
+
+    function cerrarTodosDropdowns() {
+        document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+            dropdown.remove();
+        });
+    }
+
+    function limpiarTodosFiltros() {
+        filtrosAplicados = {};
+        document.querySelectorAll('.data-row').forEach(row => {
+            row.style.display = 'flex';
+        });
+        actualizarEstadoFiltros();
+    }
+
+    function actualizarEstadoFiltros() {
+        const estado = document.getElementById('estadoFiltros');
+        const numFiltros = Object.keys(filtrosAplicados).length;
+        if (numFiltros > 0 && filtrosActivos) {
+            estado.textContent = `${numFiltros} filtro(s) aplicado(s)`;
+            estado.style.color = '#667eea';
+        } else if (filtrosActivos) {
+            estado.textContent = 'Filtros activados';
+            estado.style.color = '#667eea';
+        }
+    }
+
+    // Agregar event listeners a los headers cuando cargue la página
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.col-header.filterable').forEach(header => {
+            header.addEventListener('click', function(e) {
+                if (!filtrosActivos) return;
+                
+                e.stopPropagation();
+                
+                const columna = this.getAttribute('data-column');
+                
+                // Si es OST, usar modal de búsqueda especial
+                if (columna === 'ost') {
+                    mostrarBusquedaOST(this);
+                    return;
+                }
+                
+                // Para otras columnas, comportamiento normal
+                document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                    if (dropdown.parentElement !== this) {
+                        dropdown.remove();
+                    }
+                });
+                
+                const existente = this.querySelector('.filter-dropdown');
+                if (existente) {
+                    existente.remove();
+                    return;
+                }
+                
+                mostrarDropdownFiltro(this, columna);
+            });
+        });
+        
+        // Cerrar dropdowns al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.col-header.filterable')) {
+                cerrarTodosDropdowns();
+            }
+        });
+
+        // Ordenar inicialmente por OST
+        ordenarPorOST();
+    });
+
+  
+    function mostrarDropdownFiltro(header, columna) {
+    // Obtener valores únicos de la columna SOLO de las filas visibles
+    const valores = new Set();
+    
+    // Buscar en AMBAS secciones (fija y scrollable), pero solo filas visibles
+    document.querySelectorAll(`.data-row`).forEach(row => {
+        // Saltar filas ocultas por otros filtros
+        if (row.style.display === 'none') return;
+        const cell = row.querySelector(`[data-field="${columna}"]`);
+        if (cell) {
+            const valor = cell.textContent.trim();
+            if (valor && valor !== 'N/A' && valor !== '') {
+                valores.add(valor);
+            }
+        }
+    });
+    
+    const valoresArray = Array.from(valores).sort();
+    
+    // Crear dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'filter-dropdown active';
+    
+    let html = `
+        <div class="filter-dropdown-header">
+            <span>🔍 Filtrar: ${columna.charAt(0).toUpperCase() + columna.slice(1).replace('_', ' ')}</span>
+            <span class="filter-dropdown-close" onclick="cerrarTodosDropdowns()">×</span>
+        </div>
+        <div class="filter-dropdown-body">
+            <input type="text" class="filter-search" placeholder="Buscar..." onkeyup="filtrarOpciones(this)">
+            <div class="filter-options">
+                <div class="filter-option" onclick="toggleTodosCheckboxes(this, '${columna}')">
+                    <input type="checkbox" checked id="selectAll_${columna}">
+                    <label>(Seleccionar todo)</label>
+                </div>
+    `;
+    
+    valoresArray.forEach(valor => {
+        const isChecked = !filtrosAplicados[columna] || filtrosAplicados[columna].includes(valor);
+        html += `
+            <div class="filter-option" data-value="${valor}" onclick="toggleCheckboxFiltro(event, this)">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} value="${valor}" data-column="${columna}" onclick="event.stopPropagation()">
+                <label>${valor}</label>
+            </div>
+        `;
+    });
+    
+    html += `
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn-limpiar" onclick="limpiarFiltroColumna('${columna}')">Limpiar</button>
+            <button class="btn-aplicar" onclick="aplicarFiltroColumna('${columna}')">Aplicar</button>
+        </div>
+    `;
+    
+    dropdown.innerHTML = html;
+    document.body.appendChild(dropdown);
+    
+    // Posicionar el dropdown cerca del header
+    const rect = header.getBoundingClientRect();
+    let top = rect.bottom + 5;
+    let left = rect.left;
+    
+    // Ajustar posición inicial para que no se salga de la pantalla
+    dropdown.style.top = top + 'px';
+    dropdown.style.left = left + 'px';
+    
+    setTimeout(() => {
+        const dropdownRect = dropdown.getBoundingClientRect();
+        
+        // Ajustar horizontal si se sale
+        if (dropdownRect.right > window.innerWidth) {
+            left = window.innerWidth - dropdownRect.width - 10;
+            dropdown.style.left = left + 'px';
+        }
+        
+        // Ajustar vertical si se sale
+        if (dropdownRect.bottom > window.innerHeight) {
+            top = rect.top - dropdownRect.height - 5;
+            dropdown.style.top = Math.max(10, top) + 'px';
+        }
+    }, 10);
+    
+    // Hacer el dropdown arrastrable
+    hacerArrastrable(dropdown);
+    
+    // Prevenir que el dropdown se cierre al hacer clic dentro
+    dropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+}
+
+    function mostrarBusquedaOST(header) {
+        // Cerrar otros dropdowns
+        cerrarTodosDropdowns();
+        
+        const dropdown = document.createElement('div');
+        dropdown.className = 'filter-dropdown active';
+        
+        dropdown.innerHTML = `
+            <div class="filter-dropdown-header">
+                <span>🔍 Buscar OST</span>
+                <span class="filter-dropdown-close" onclick="cerrarTodosDropdowns()">×</span>
+            </div>
+            <div class="filter-dropdown-body">
+                <input type="text" class="filter-search" id="searchOST" placeholder="Escriba el número de OST..." style="margin-bottom: 10px;">
+                <div style="padding: 10px; color: #666; font-size: 0.85rem; text-align: center;">
+                    Presione Enter para buscar
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn-limpiar" onclick="limpiarFiltroColumna('ost')">Limpiar</button>
+                <button class="btn-aplicar" onclick="aplicarBusquedaOST()">Buscar</button>
+            </div>
+        `;
+        
+        document.body.appendChild(dropdown);
+        
+        // Posicionar el dropdown
+        const rect = header.getBoundingClientRect();
+        dropdown.style.top = rect.bottom + 5 + 'px';
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.minWidth = '300px';
+        
+        // Hacer arrastrable
+        hacerArrastrable(dropdown);
+        
+        // Prevenir cierre al hacer clic dentro
+        dropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        // Focus en el input
+        setTimeout(() => {
+            const input = document.getElementById('searchOST');
+            input.focus();
+            
+            // Enter para buscar
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    aplicarBusquedaOST();
+                }
+            });
+        }, 100);
+    }
+
+    function aplicarBusquedaOST() {
+        const input = document.getElementById('searchOST');
+        const valorBuscado = input.value.trim();
+        
+        if (!valorBuscado) {
+            alert('⚠️ Por favor ingrese un número de OST');
+            return;
+        }
+        
+        // Obtener todas las filas de AMBAS secciones
+        const filasScrollable = document.querySelectorAll('.scrollable-section .data-row');
+        const filasFijas = document.querySelectorAll('.fixed-section .data-row');
+        
+        // Procesar cada fila
+        for (let i = 0; i < filasFijas.length; i++) {
+            let mostrar = false;
+            
+            // Buscar la celda OST en la sección fija
+            const cellOST = filasFijas[i].querySelector('.ch-ost');
+            
+            if (cellOST) {
+                const valorOST = cellOST.textContent.trim();
+                // Buscar si el valor contiene el texto buscado (búsqueda parcial)
+                if (valorOST.toLowerCase().includes(valorBuscado.toLowerCase())) {
+                    mostrar = true;
+                }
+            }
+            
+            // Aplicar otros filtros existentes si los hay
+            for (const [columna, valores] of Object.entries(filtrosAplicados)) {
+                if (columna === 'ost') continue; // Saltar el filtro OST que acabamos de aplicar
+                
+                let cell = filasFijas[i].querySelector(`[data-field="${columna}"]`);
+                if (!cell && filasScrollable[i]) {
+                    cell = filasScrollable[i].querySelector(`[data-field="${columna}"]`);
+                }
+                
+                if (cell) {
+                    const valorCelda = cell.textContent.trim();
+                    if (!valores.includes(valorCelda)) {
+                        mostrar = false;
+                        break;
+                    }
+                }
+            }
+            
+            // Aplicar display a AMBAS filas (fija y scrollable)
+            if (filasFijas[i]) {
+                filasFijas[i].style.display = mostrar ? 'flex' : 'none';
+            }
+            if (filasScrollable[i]) {
+                filasScrollable[i].style.display = mostrar ? 'flex' : 'none';
+            }
+        }
+        
+        // Marcar que el filtro OST está aplicado
+        filtrosAplicados['ost'] = [valorBuscado];
+        cerrarTodosDropdowns();
+        actualizarEstadoFiltros();
+    }
+    // Función para hacer elementos arrastrables
+function hacerArrastrable(elemento) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = elemento.querySelector('.filter-dropdown-header');
+    
+    if (header) {
+        header.onmousedown = arrastrarMouseDown;
+    }
+    
+    function arrastrarMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = cerrarArrastre;
+        document.onmousemove = arrastrarElemento;
+    }
+    
+    function arrastrarElemento(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        
+        let newTop = elemento.offsetTop - pos2;
+        let newLeft = elemento.offsetLeft - pos1;
+        
+        // Limitar para que no se salga de la pantalla
+        newTop = Math.max(0, Math.min(newTop, window.innerHeight - elemento.offsetHeight));
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - elemento.offsetWidth));
+        
+        elemento.style.top = newTop + "px";
+        elemento.style.left = newLeft + "px";
+    }
+    
+    function cerrarArrastre() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+function toggleCheckboxFiltro(event, option) {
+    // Si el clic fue directamente en el checkbox, no hacer nada (ya se maneja solo)
+    if (event.target.tagName === 'INPUT') return;
+    
+    const checkbox = option.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+}
+    function filtrarOpciones(input) {
+        const filtro = input.value.toLowerCase();
+        const opciones = input.parentElement.querySelectorAll('.filter-option:not(:first-child)');
+        
+        opciones.forEach(opcion => {
+            const texto = opcion.textContent.toLowerCase();
+            opcion.style.display = texto.includes(filtro) ? 'flex' : 'none';
+        });
+    }
+
+    function toggleTodosCheckboxes(option, columna) {
+        const checkbox = option.querySelector('input');
+        const todasCheckboxes = option.parentElement.querySelectorAll('input[type="checkbox"]:not(#selectAll_' + columna + ')');
+        
+        todasCheckboxes.forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+    }
+
+    function limpiarFiltroColumna(columna) {
+        delete filtrosAplicados[columna];
+        cerrarTodosDropdowns();
+        aplicarTodosFiltros();
+    }
+
+    function aplicarFiltroColumna(columna) {
+        const dropdown = document.querySelector('.filter-dropdown.active');
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:checked:not([id^="selectAll"])');
+        
+        const seleccionados = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (seleccionados.length === 0) {
+            delete filtrosAplicados[columna];
+        } else {
+            filtrosAplicados[columna] = seleccionados;
+        }
+        
+        cerrarTodosDropdowns();
+        aplicarTodosFiltros();
+    }
+
+    function aplicarTodosFiltros() {
+        // Obtener todas las filas de AMBAS secciones
+        const filasScrollable = document.querySelectorAll('.scrollable-section .data-row');
+        const filasFijas = document.querySelectorAll('.fixed-section .data-row');
+        
+        // Procesar cada fila
+        for (let i = 0; i < filasFijas.length; i++) {
+            let mostrar = true;
+            
+            // Verificar filtros contra AMBAS secciones
+            for (const [columna, valores] of Object.entries(filtrosAplicados)) {
+                // Buscar celda en sección fija
+                let cell = filasFijas[i].querySelector(`[data-field="${columna}"]`);
+                
+                // Si no está en fija, buscar en scrollable
+                if (!cell && filasScrollable[i]) {
+                    cell = filasScrollable[i].querySelector(`[data-field="${columna}"]`);
+                }
+                
+                if (cell) {
+                    const valorCelda = cell.textContent.trim();
+                    if (!valores.includes(valorCelda)) {
+                        mostrar = false;
+                        break;
+                    }
+                }
+            }
+            
+            // Aplicar display a AMBAS filas (fija y scrollable)
+            if (filasFijas[i]) {
+                filasFijas[i].style.display = mostrar ? 'flex' : 'none';
+            }
+            if (filasScrollable[i]) {
+                filasScrollable[i].style.display = mostrar ? 'flex' : 'none';
+            }
+        }
+        
+        actualizarEstadoFiltros();
+    }
+    let ordenOSTAscendente = false;
+
+    function toggleOrdenOST(event) {
+        if (!filtrosActivos) {
+            // Si los filtros no están activos, solo ordenar
+            ordenOSTAscendente = !ordenOSTAscendente;
+            ordenarPorOST();
+            actualizarIconoOrden();
+        }
+        // Si los filtros están activos, dejar que se abra el dropdown normalmente
+    }
+
+    function actualizarIconoOrden() {
+        const icono = document.getElementById('iconOrdenOST');
+        icono.textContent = ordenOSTAscendente ? '↓' : '↑';
+    }
+
+    function ordenarPorOST() {
+        const filasScrollable = Array.from(document.querySelectorAll('.scrollable-section .data-row'));
+        const filasFijas = Array.from(document.querySelectorAll('.fixed-section .data-row'));
+        
+        // Combinar ambas listas con sus índices
+        const filasConOST = filasScrollable.map((row, idx) => {
+            const ostText = filasFijas[idx].querySelector('.ch-ost').textContent.trim();
+            const ostNum = ostText === 'N/A' ? -1 : parseInt(ostText);
+            return { scrollable: row, fija: filasFijas[idx], ost: ostNum };
+        });
+        
+        // Ordenar
+        filasConOST.sort((a, b) => {
+            if (ordenOSTAscendente) {
+                return a.ost - b.ost;
+            } else {
+                return b.ost - a.ost;
+            }
+        });
+        
+        // Reordenar en el DOM
+        const containerScrollable = document.getElementById('scrollableRows');
+        const containerFija = document.getElementById('fixedRows');
+        
+        filasConOST.forEach(item => {
+            containerScrollable.appendChild(item.scrollable);
+            containerFija.appendChild(item.fija);
+        });
+    }
+
+    
+
+    // ==================== SISTEMA DE GUARDADO GENERAL ====================
+
+    // Objeto para rastrear cambios pendientes por equipo
+    const cambiosPendientes = new Map();
+
+    // Función para registrar un cambio
+    function registrarCambio(equipoId, campo, nuevoValor) {
+        if (!cambiosPendientes.has(equipoId)) {
+            cambiosPendientes.set(equipoId, {});
+        }
+        
+        cambiosPendientes.get(equipoId)[campo] = nuevoValor;
+        
+        // Marcar la fila como modificada
+        const filas = document.querySelectorAll(`[data-id="${equipoId}"]`).forEach(fila => {
+            const row = fila.closest('.data-row');
+            if (row) row.classList.add('modified');
+        });
+        
+        actualizarBotonGuardado();
+    }
+
+    // Función para actualizar el botón de guardado
+    function actualizarBotonGuardado() {
+        const container = document.getElementById('saveAllContainer');
+        const badge = document.getElementById('changesBadge');
+        
+        if (!container || !badge) return;
+        
+        const numCambios = cambiosPendientes.size;
+        
+        if (numCambios > 0) {
+            container.style.display = 'block';
+            badge.textContent = numCambios;
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // Función para guardar todos los cambios
+    async function guardarTodosLosCambios() {
+        if (cambiosPendientes.size === 0) {
+            alert('✅ No hay cambios pendientes');
+            return;
+        }
+        
+        const equiposAGuardar = Array.from(cambiosPendientes.entries());
+        const totalEquipos = equiposAGuardar.length;
+        
+        if (!confirm(`¿Deseas guardar los cambios de ${totalEquipos} equipo(s)?`)) {
+            return;
+        }
+        
+        // Mostrar indicador de progreso
+        const progressMsg = document.createElement('div');
+        progressMsg.id = 'saveProgressMsg';
+        progressMsg.style.cssText = 
+            'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);' +
+            'background: white; padding: 2rem; border-radius: 12px;' +
+            'box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 10000; text-align: center; min-width: 300px;';
+        progressMsg.innerHTML = `
+            <h3>💾 Guardando cambios...</h3>
+            <p id="progressText">0 de ${totalEquipos} equipos guardados</p>
+            <div style="background: #e0e0e0; height: 10px; border-radius: 5px; margin-top: 1rem; overflow: hidden;">
+                <div id="progressBar" style="background: #4caf50; height: 100%; width: 0%; transition: width 0.3s;"></div>
+            </div>
+        `;
+        document.body.appendChild(progressMsg);
+        
+        let guardados = 0;
+        let errores = 0;
+        
+        // Guardar cada equipo
+        for (const [equipoId, cambios] of equiposAGuardar) {
+            try {
+                const response = await fetch(`/api/equipo/${equipoId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(cambios)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    guardados++;
+                    
+                    // Quitar marca de modificado
+                    document.querySelectorAll(`[data-id="${equipoId}"]`).forEach(celda => {
+                        const row = celda.closest('.data-row');
+                        if (row) row.classList.remove('modified');
+                    });
+                } else {
+                    errores++;
+                    console.error(`Error en equipo ${equipoId}:`, result.error);
+                }
+            } catch (error) {
+                errores++;
+                console.error(`Error de red en equipo ${equipoId}:`, error);
+            }
+            
+            // Actualizar progreso
+            const progressText = document.getElementById('progressText');
+            const progressBar = document.getElementById('progressBar');
+            if (progressText) progressText.textContent = `${guardados + errores} de ${totalEquipos} equipos procesados`;
+            if (progressBar) progressBar.style.width = `${((guardados + errores) / totalEquipos) * 100}%`;
+        }
+        
+        // Limpiar cambios pendientes
+        cambiosPendientes.clear();
+        actualizarBotonGuardado();
+        
+        // Remover indicador de progreso
+        const msg = document.getElementById('saveProgressMsg');
+        if (msg) document.body.removeChild(msg);
+        
+        // Mostrar resultado
+        if (errores > 0) {
+            alert(`⚠️ Guardado completado con errores:\n\n✅ ${guardados} equipos guardados correctamente\n❌ ${errores} equipos con error`);
+        } else {
+            alert(`✅ Todos los cambios se guardaron correctamente\n\n${guardados} equipo(s) actualizado(s)`);
+        }
+    }
+
+    // Modificar las funciones existentes para usar el sistema de cambios pendientes
+
+    // Actualizar celdas editables para registrar cambios
+    document.querySelectorAll('.editable').forEach(cell => {
+        let original = cell.textContent.trim();
+        
+        cell.addEventListener('focus', () => { 
+            original = cell.textContent.trim(); 
+        });
+        
+        cell.addEventListener('blur', function() {
+            const nuevo = this.textContent.trim();
+            if(nuevo !== original) {
+                const id = parseInt(this.getAttribute('data-id'));
+                const field = this.getAttribute('data-field');
+                registrarCambio(id, field, nuevo);
+            }
+        });
+    });
+
+    // Actualizar checkboxes para registrar cambios
+    document.querySelectorAll('.checkbox-cell input').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = parseInt(this.getAttribute('data-id'));
+            const field = this.getAttribute('data-field');
+            registrarCambio(id, field, this.checked);
+        });
+    });
+
+    // Actualizar selectores para registrar cambios
+    const seleccionarOriginal = window.seleccionar;
+    window.seleccionar = function(valor) {
+        if (!isFormSelector && selCell) {
+            const id = parseInt(selCell.getAttribute('data-id'));
+            const field = selCell.getAttribute('data-field');
+            selCell.textContent = valor;
+            registrarCambio(id, field, valor);
+            cerrarSelector();
+        } else {
+            seleccionarOriginal(valor);
+        }
+    };
+
+    // Actualizar fechas para registrar cambios
+    document.querySelectorAll('.editable-date').forEach(cell => {
+        const originalClick = cell.onclick;
+        cell.addEventListener('click', function() {
+            const id = parseInt(this.getAttribute('data-id'));
+            const field = this.getAttribute('data-field');
+            
+            // Guardar referencia para usar en los botones del modal
+            this.dataset.equipoId = id;
+            this.dataset.fieldName = field;
+        });
+    });
+
+    // Actualizar dinero para registrar cambios  
+    document.querySelectorAll('.editable-money').forEach(cell => {
+        const originalClick = cell.onclick;
+        cell.addEventListener('click', function() {
+            const id = parseInt(this.getAttribute('data-id'));
+            const field = this.getAttribute('data-field');
+            
+            this.dataset.equipoId = id;
+            this.dataset.fieldName = field;
+        });
+    });
+
+    // Atajo de teclado Ctrl+Shift+S para guardar todo
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+            e.preventDefault();
+            
+            if (!userPermissions.canEdit) {
+                alert('⛔ No tienes permisos para guardar');
+                return;
+            }
+            
+            guardarTodosLosCambios();
+        }
+    });
+
+    console.log('💾 Sistema de guardado general activado (Ctrl+Shift+S para guardar todo)');
+
+    // ==================== CÓDIGO DE PERMISOS Y AUDITORÍA ====================
+
+    // 1. VARIABLES DE PERMISOS
+    const userPermissions = {
+        canEdit: {{ 'true' if current_user.has_permission('edit') else 'false' }},
+        canDelete: {{ 'true' if current_user.has_permission('delete') else 'false' }},
+        isViewer: {{ 'true' if current_user.role == 'viewer' else 'false' }}
+    };
+
+    console.log('🔐 Permisos del usuario:', userPermissions);
+
+    // Después de la definición de userPermissions, agrega:
+    if (userPermissions.isViewer) {
+        // Ocultar botón de agregar equipo para viewers
+        const btnAgregar = document.querySelector('button[onclick="abrirModalAgregarEquipo()"]');
+        if (btnAgregar) {
+            btnAgregar.style.display = 'none';
+        }
+    }
+
+    // 2. FUNCIÓN PARA ELIMINAR EQUIPO
+    async function eliminarEquipo(equipoId, ost) {
+        if (!userPermissions.canDelete) {
+            alert('⛔ No tienes permisos para eliminar equipos');
+            return;
+        }
+        
+        const confirmacion = confirm(
+            '⚠️ ¿Estás seguro de eliminar el equipo OST ' + ost + '?\n\n' +
+            'Esta acción NO se puede deshacer.\n' +
+            'Se eliminarán también todos los archivos adjuntos.'
+        );
+        
+        if (!confirmacion) return;
+        
+        const doubleCheck = confirm(
+            '🚨 ÚLTIMA CONFIRMACIÓN\n\n' +
+            '¿REALMENTE deseas eliminar OST ' + ost + '?'
+        );
+        
+        if (!doubleCheck) return;
+        
+        const finalCheck = prompt('Escribe "ELIMINAR" para confirmar:');
+        if (finalCheck !== 'ELIMINAR') {
+            alert('❌ Operación cancelada');
+            return;
+        }
+        
+        const loadingMsg = document.createElement('div');
+        loadingMsg.id = 'deleteLoadingMsg';
+        loadingMsg.style.cssText = 
+            'position: fixed; top: 50%; left: 50%;' +
+            'transform: translate(-50%, -50%);' +
+            'background: white; padding: 2rem;' +
+            'border-radius: 12px;' +
+            'box-shadow: 0 10px 40px rgba(0,0,0,0.3);' +
+            'z-index: 10000; text-align: center;';
+        loadingMsg.innerHTML = '<h3>🔄 Eliminando equipo...</h3><p>Por favor espera</p>';
+        document.body.appendChild(loadingMsg);
+        
+        try {
+            const response = await fetch('/api/equipo/' + equipoId, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'}
+            });
+            
+            const result = await response.json();
+            
+            const msg = document.getElementById('deleteLoadingMsg');
+            if (msg) document.body.removeChild(msg);
+            
+            if (result.success) {
+                alert('✅ Equipo eliminado correctamente\n\nLa página se recargará automáticamente.');
+                window.location.reload();
+            } else {
+                alert('❌ Error al eliminar: ' + (result.error || 'Error desconocido'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            const msg = document.getElementById('deleteLoadingMsg');
+            if (msg) document.body.removeChild(msg);
+            alert('❌ Error de red al eliminar el equipo');
+        }
+    }
+
+    // 3. AUTO-GUARDADO (opcional)
+    let autoSaveTimeout;
+    const AUTO_SAVE_DELAY = 3000;
+
+    function setupAutoSave() {
+        if (!userPermissions.canEdit) return;
+        
+        document.querySelectorAll('.editable').forEach(function(cell) {
+            cell.addEventListener('input', function() {
+                const equipoId = this.getAttribute('data-id');
+                clearTimeout(autoSaveTimeout);
+                this.style.borderLeft = '3px solid #ffc107';
+                
+                autoSaveTimeout = setTimeout(function() {
+                    console.log('💾 Auto-guardando equipo', equipoId);
+                    guardarCambios(equipoId);
+                    cell.style.borderLeft = '';
+                }, AUTO_SAVE_DELAY);
+            });
+        });
+        
+        console.log('🤖 Auto-guardado activado (delay: ' + AUTO_SAVE_DELAY + 'ms)');
+    }
+
+    // 4. ATAJO Ctrl+S
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            
+            if (!userPermissions.canEdit) {
+                alert('⛔ No tienes permisos para guardar');
+                return;
+            }
+            
+            const activeCell = document.activeElement;
+            if (activeCell && activeCell.closest('.data-row')) {
+                const equipoId = activeCell.closest('.data-row').getAttribute('data-id');
+                if (equipoId) {
+                    console.log('⌨️ Guardando con Ctrl+S:', equipoId);
+                    guardarCambios(equipoId);
+                }
+            }
+        }
+    });
+
+    // 5. CONFIGURACIÓN AL CARGAR LA PÁGINA (DOMContentLoaded UNIFICADO)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Deshabilitar edición para viewers
+        if (userPermissions.isViewer) {
+            document.querySelectorAll('.editable').forEach(function(cell) {
+                cell.removeAttribute('contenteditable');
+                cell.style.cursor = 'default';
+                cell.classList.remove('editable');
+            });
+            
+            document.querySelectorAll('.editable-select, .editable-date, .editable-money').forEach(function(cell) {
+                cell.style.cursor = 'default';
+                cell.style.pointerEvents = 'none';
+            });
+            
+            document.querySelectorAll('.obs-cell').forEach(function(cell) {
+                cell.style.cursor = 'default';
+                cell.style.pointerEvents = 'none';
+            });
+            
+            document.querySelectorAll('.checkbox-cell input[type="checkbox"]').forEach(function(checkbox) {
+                checkbox.disabled = true;
+                checkbox.style.cursor = 'not-allowed';
+            });
+            
+            console.log('👁️ Modo solo lectura activado (Viewer)');
+        }
+        
+        // Activar auto-guardado
+        setupAutoSave();
+        
+        console.log('✅ Sistema de permisos y auditoría cargado correctamente');
+    });
+
+</script>
+{% endblock %}

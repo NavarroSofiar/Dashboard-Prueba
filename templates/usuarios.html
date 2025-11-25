@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block extra_css %}
+<style>
+.role-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.role-admin {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.role-editor {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.role-viewer {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-active {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-inactive {
+    background-color: #fafafa;
+    color: #757575;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    margin: 0 0.2rem;
+}
+
+.user-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+    color: #1e4d7b;
+    margin: 0;
+}
+
+.close {
+    font-size: 2rem;
+    font-weight: 300;
+    color: #999;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+.close:hover {
+    color: #333;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="color: #1e4d7b;">👥 Gestión de Usuarios</h2>
+    <button class="btn btn-primary" onclick="openNewUserModal()">➕ Crear Nuevo Usuario</button>
+</div>
+
+<div style="margin-bottom: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+    <strong>💡 Roles disponibles:</strong>
+    <ul style="margin: 0.5rem 0 0 1.5rem; color: #666;">
+        <li><strong>Visualizador:</strong> Solo puede ver información</li>
+        <li><strong>Editor Simple:</strong> Puede ver y editar, pero NO eliminar</li>
+        <li><strong>Editor Full:</strong> Puede ver, editar y eliminar equipos</li>
+        <li><strong>Administrador:</strong> Acceso completo + gestión de usuarios + historial</li>
+    </ul>
+</div>
+
+<div style="overflow-x: auto;">
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Creado</th>
+                <th>Último Login</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><strong>{{ user.username }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td>
+                    <span class="role-badge role-{{ user.role }}">
+                        {% if user.role == 'admin' %}👑 Administrador
+                        {% elif user.role == 'editor' %}✏️ Editor Full
+                        {% elif user.role == 'editor_v2' %}📝 Editor Simple
+                        {% else %}👁️ Visualizador{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge {% if user.activo %}status-active{% else %}status-inactive{% endif %}">
+                        {% if user.activo %}✅ Activo{% else %}⛔ Inactivo{% endif %}
+                    </span>
+                </td>
+                <td>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</td>
+                <td>{{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Nunca' }}</td>
+                <td>
+                    <div class="user-actions">
+                        <button class="btn btn-primary btn-small" onclick="openEditRoleModal({{ user.id }}, '{{ user.username }}', '{{ user.role }}')">
+                            🔧 Rol
+                        </button>
+                        <button class="btn btn-primary btn-small" onclick="toggleUserStatus({{ user.id }}, {{ 'true' if user.activo else 'false' }})">
+                            {% if user.activo %}🚫 Desactivar{% else %}✅ Activar{% endif %}
+                        </button>
+                        <button class="btn btn-primary btn-small" onclick="openPasswordModal({{ user.id }}, '{{ user.username }}')">
+                            🔑 Password
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal para crear nuevo usuario -->
+<div id="newUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>➕ Crear Nuevo Usuario</h3>
+            <button class="close" onclick="closeModal('newUserModal')">&times;</button>
+        </div>
+        <form id="newUserForm">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Usuario:</label>
+                <input type="text" name="username" required style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Email:</label>
+                <input type="email" name="email" required style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña:</label>
+                <input type="password" name="password" required minlength="8" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Rol:</label>
+                <select name="role" required style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                    <option value="viewer">👁️ Visualizador</option>
+                    <option value="editor_v2">📝 Editor Simple</option>
+                    <option value="editor">✏️ Editor Full</option>
+                    <option value="admin">👑 Administrador</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Crear Usuario</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para cambiar rol -->
+<div id="editRoleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🔧 Cambiar Rol de Usuario</h3>
+            <button class="close" onclick="closeModal('editRoleModal')">&times;</button>
+        </div>
+        <p style="margin-bottom: 1rem; color: #666;">Usuario: <strong id="editRoleUsername"></strong></p>
+        <form id="editRoleForm">
+            <input type="hidden" name="user_id" id="editRoleUserId">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nuevo Rol:</label>
+                <select name="role" id="editRoleSelect" required style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                    <option value="viewer">👁️ Visualizador</option>
+                    <option value="editor_v2">📝 Editor Simple</option>
+                    <option value="editor">✏️ Editor Full</option>
+                    <option value="admin">👑 Administrador</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Actualizar Rol</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para cambiar contraseña -->
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🔑 Cambiar Contraseña</h3>
+            <button class="close" onclick="closeModal('passwordModal')">&times;</button>
+        </div>
+        <p style="margin-bottom: 1rem; color: #666;">Usuario: <strong id="passwordUsername"></strong></p>
+        <form id="passwordForm">
+            <input type="hidden" name="user_id" id="passwordUserId">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nueva Contraseña:</label>
+                <input type="password" name="new_password" required minlength="8" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;" placeholder="Mínimo 8 caracteres">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Actualizar Contraseña</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gestión de modales
+function openNewUserModal() {
+    document.getElementById('newUserModal').style.display = 'block';
+}
+
+function openEditRoleModal(userId, username, currentRole) {
+    document.getElementById('editRoleUserId').value = userId;
+    document.getElementById('editRoleUsername').textContent = username;
+    document.getElementById('editRoleSelect').value = currentRole;
+    document.getElementById('editRoleModal').style.display = 'block';
+}
+
+function openPasswordModal(userId, username) {
+    document.getElementById('passwordUserId').value = userId;
+    document.getElementById('passwordUsername').textContent = username;
+    document.getElementById('passwordModal').style.display = 'block';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+// Crear nuevo usuario
+document.getElementById('newUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/users/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Usuario creado exitosamente');
+            location.reload();
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error de red: ' + error);
+    }
+});
+
+// Cambiar rol
+document.getElementById('editRoleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/users/update-role', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Rol actualizado exitosamente');
+            location.reload();
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error de red: ' + error);
+    }
+});
+
+// Cambiar contraseña
+document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/users/update-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Contraseña actualizada exitosamente');
+            closeModal('passwordModal');
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error de red: ' + error);
+    }
+});
+
+// Activar/Desactivar usuario
+async function toggleUserStatus(userId, isActive) {
+    const action = isActive ? 'desactivar' : 'activar';
+    if (!confirm(`¿Estás seguro de ${action} este usuario?`)) return;
+    
+    try {
+        const response = await fetch('/api/users/toggle-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`✅ Usuario ${action}do exitosamente`);
+            location.reload();
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Error de red: ' + error);
+    }
+}
+</script>
+{% endblock %}
