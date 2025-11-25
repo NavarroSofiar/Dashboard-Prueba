@@ -739,5 +739,14 @@ def inject_user():
     """Inyecta información del usuario actual en todos los templates"""
     return dict(current_user=current_user)
 
+@app.route('/setup-admin')
+def setup_admin():
+        from auth import create_user
+        try:
+            create_user('admin', 'admin@syemed.com', 'Admin123456', 'admin')
+            return "✅ Admin creado - ELIMINA ESTA RUTA YA"
+        except:
+            return "❌ Error o ya existe"
+
 if __name__ == '__main__':
     app.run(debug=True)
