@@ -177,6 +177,7 @@
     
     <!-- Cambiar contraseña -->
     <div class="profile-card">
+        {% if current_user.has_permission('edit') %}
         <h3 style="color: #1e4d7b; margin-bottom: 1.5rem;">🔒 Cambiar Contraseña</h3>
         
         <form id="changePasswordForm">
@@ -204,6 +205,15 @@
             </button>
         </form>
     </div>
+
+    {% else %}
+    <div class="profile-card">
+        <h3 style="color: #1e4d7b; margin-bottom: 1rem;">🔒 Cambio de Contraseña</h3>
+        <div style="padding: 1rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <strong>ℹ️ Información:</strong> Los usuarios con rol Visualizador no pueden cambiar su contraseña. Contacta a un administrador.
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Información de permisos -->
     <div class="profile-card">

@@ -250,15 +250,13 @@
             {% if current_user.is_authenticated %}
             <div style="display: flex; align-items: center; gap: 1rem; color: white;">
                 <div style="text-align: right;">
-                    <div style="font-size: 0.9rem; opacity: 0.9;">👤 {{ current_user.username }}</div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">{{ current_user.username }}</div>
                     <div style="font-size: 0.8rem; opacity: 0.7;">{{ current_user.get_role_name() }}</div>
                 </div>
-                <li>
-                    <a href="{{ url_for('perfil') }}" class="{% if request.endpoint == 'perfil' %}active{% endif %}">
-                        <span class="nav-icon">👤</span>
-                        <span class="nav-text">Mi Perfil</span>
-                    </a>
-                </li>
+               
+                <a href="{{ url_for('perfil') }}" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); border-radius: 6px; color: white; text-decoration: none; font-weight: 500; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    👤 Mi Perfil
+                </a>
                 
                 <a href="{{ url_for('logout') }}" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); border-radius: 6px; color: white; text-decoration: none; font-weight: 500; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                     🚪 Salir

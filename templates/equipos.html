@@ -95,7 +95,7 @@
 }
 
 .gh-dominio { background: #fff9c4; color: #333; width: 380px; }
-.gh-ingreso { background: #b3e5fc; color: #333; width: 1680px; }
+.gh-ingreso { background: #b3e5fc; color: #333; width: 1820px; }
 .gh-observacion { background: #fff9c4; color: #333; width: 320px; }
 .gh-tecnico { background: #fff; color: #333; width: 700px; border: 1px solid #ddd; }
 .gh-comercial { background: #80deea; color: #333; width: 740px; }
@@ -155,6 +155,7 @@
 .ch-modelo { width: 160px; }
 .ch-serie { width: 190px; }
 .ch-accesorios { width: 210px; }
+.ch-categoria { width: 140px; }
 .ch-obs { width: 210px; }
 .ch-fotos { width: 160px; }
 .ch-prioridad { width: 110px; }
@@ -1107,8 +1108,16 @@
                          data-field="cliente">{{ equipo.cliente or '' }}</div>
                     
                     <!-- OST (no editable) -->
-                    <div class="cell ch-ost">{{ equipo.ost or 'N/A' }}</div>
-                    
+                   
+                    <div class="cell ch-ost">
+                        {% if equipo.solicitud_id %}
+                            <a href="{{ url_for('solicitudes') }}#solicitud-{{ equipo.solicitud_id }}" style="color: #1e4d7b; font-weight: 600; text-decoration: none;">
+                                {{ equipo.ost or 'N/A' }}
+                            </a>
+                        {% else %}
+                            {{ equipo.ost or '' }}
+                        {% endif %}
+                    </div>
                     <!-- ✅ MODIFICADO: Estado -->
                     <div class="cell ch-estado estado-cell {% if current_user.has_permission('edit') %}editable-select{% endif %}" 
                          data-id="{{ equipo.id }}" 
@@ -1148,6 +1157,7 @@
                     Nº Serie <span class="filter-icon">▼</span>
                 </div>
                 <div class="col-header ch-accesorios">Accesorios</div>
+                <div class="col-header ch-categoria">Categoría</div>
                 <div class="col-header ch-obs">Obs. Ingreso</div>
                 <div class="col-header ch-fotos">Fotos</div>
                 <div class="col-header ch-prioridad filterable" data-column="prioridad">
@@ -1227,7 +1237,7 @@
                          {% if not current_user.has_permission('edit') %}style="cursor: default; background-color: #fafafa;"{% endif %}
                          data-id="{{ equipo.id }}" 
                          data-field="accesorios">{{ equipo.accesorios or '' }}</div>
-                    
+                    <div class="cell ch-categoria" style="background-color: #f0f0f0;">{{ equipo.categoria or '' }}</div>
                     <!-- ✅ MODIFICADO: Observación (celda especial con modal) -->
                     <div class="cell ch-obs obs-cell {% if not current_user.has_permission('edit') %}non-editable{% endif %}" 
                          data-id="{{ equipo.id }}" 
@@ -1239,7 +1249,18 @@
                     <!-- Fotos (no editable) -->
                     <div class="cell ch-fotos">
                         {% set fotos = archivos|selectattr('numero_serie', 'equalto', equipo.numero_serie)|selectattr('categoria', 'equalto', 'falla')|list %}
-                        {% if fotos %}{% for foto in fotos %}<a href="{{ foto.url_cloudinary }}" target="_blank">🖼️</a>{% endfor %}{% else %}-{% endif %}
+                        {% set facturas = archivos|selectattr('numero_serie', 'equalto', equipo.numero_serie)|selectattr('categoria', 'equalto', 'factura')|list %}
+                        {% if fotos %}
+                            {% for foto in fotos %}
+                                <a href="{{ foto.url_cloudinary }}" target="_blank" title="Foto de falla">🖼️</a>
+                            {% endfor %}
+                        {% endif %}
+                        {% if facturas %}
+                            {% for factura in facturas %}
+                                <a href="{{ factura.url_cloudinary }}" target="_blank" title="Factura" style="color: #2e7d32;">📄</a>
+                            {% endfor %}
+                        {% endif %}
+                        {% if not fotos and not facturas %}-{% endif %}
                     </div>
                     
                     <!-- ✅ MODIFICADO: Prioridad -->

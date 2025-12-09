@@ -101,32 +101,66 @@ def index():
     
     cursor = conn.cursor()
     
-    # Métricas
+    # Métricas totales
     cursor.execute("SELECT COUNT(*) as total FROM solicitudes")
     total_solicitudes = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM equipos")
+    cursor.execute("SELECT COUNT(*) as total FROM equipos WHERE eliminado = FALSE")
     total_equipos = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM solicitudes WHERE estado = 'Pendiente'")
+    # Métricas de estados específicos para las tarjetas superiores
+    cursor.execute("SELECT COUNT(*) as total FROM equipos WHERE estado = 'Pendiente' AND eliminado = FALSE")
     pendientes = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM equipos WHERE en_garantia = true")
-    en_garantia = cursor.fetchone()['total']
+    cursor.execute("SELECT COUNT(*) as total FROM equipos WHERE estado = 'Finalizado' AND eliminado = FALSE")
+    finalizados = cursor.fetchone()['total']
     
-    # Estados de solicitudes
+    cursor.execute("SELECT COUNT(*) as total FROM equipos WHERE estado = 'En curso' AND eliminado = FALSE")
+    en_curso = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM equipos WHERE estado = 'A presupuestar' AND eliminado = FALSE")
+    a_presupuestar = cursor.fetchone()['total']
+    
+    # Estados de solicitudes (todos los estados)
     cursor.execute("""
         SELECT estado, COUNT(*) as cantidad 
-        FROM solicitudes 
+        FROM equipos 
+        WHERE eliminado = FALSE
         GROUP BY estado
+        ORDER BY 
+            CASE estado
+                WHEN 'Pendiente' THEN 1
+                WHEN 'Aprobación pendiente' THEN 2
+                WHEN 'A presupuestar' THEN 3
+                WHEN 'Baja técnica' THEN 4
+                WHEN 'En curso' THEN 5
+                WHEN 'Finalizado' THEN 6
+                WHEN 'Listo para entregar' THEN 7
+                WHEN 'Repuestos' THEN 8
+                WHEN 'Tercerizado' THEN 9
+                WHEN 'L/E - Faltantes' THEN 10
+                ELSE 11
+            END
     """)
     estados = cursor.fetchall()
     
-    # Categorías de archivos
+    # Categorías de equipos basadas en la columna categoria de solicitudes
     cursor.execute("""
-        SELECT categoria, COUNT(*) as cantidad 
-        FROM archivos_adjuntos 
-        GROUP BY categoria
+        SELECT 
+            CASE 
+                WHEN s.categoria LIKE '%R%' THEN 'Reparación'
+                WHEN s.categoria LIKE '%G%' THEN 'Garantía'
+                WHEN s.categoria LIKE '%BA%' THEN 'Baja de Alquiler'
+                WHEN s.categoria LIKE '%CA%' THEN 'Cambio de Alquiler'
+                WHEN s.categoria LIKE '%FC%' THEN 'Cambio por Falla Crítica'
+                ELSE 'Otra'
+            END as categoria_nombre,
+            COUNT(*) as cantidad
+        FROM equipos e
+        LEFT JOIN solicitudes s ON e.solicitud_id = s.id
+        WHERE e.eliminado = FALSE
+        GROUP BY categoria_nombre
+        ORDER BY cantidad DESC
     """)
     categorias = cursor.fetchall()
     
@@ -137,7 +171,9 @@ def index():
                          total_solicitudes=total_solicitudes,
                          total_equipos=total_equipos,
                          pendientes=pendientes,
-                         en_garantia=en_garantia,
+                         finalizados=finalizados,
+                         en_curso=en_curso,
+                         a_presupuestar=a_presupuestar,
                          estados=estados,
                          categorias=categorias)
 
@@ -154,16 +190,36 @@ def solicitudes():
     SELECT 
         s.id,
         s.fecha_solicitud,
+        s.estado,
+        s.categoria,
+        s.pdf_url,
         s.email_solicitante,
         s.quien_completa,
+        s.nivel_urgencia,
+        s.motivo_solicitud,
+        s.comercial_syemed,
+        -- Colaborador Syemed
         s.area_solicitante,
         s.solicitante,
-        s.nivel_urgencia,
         s.logistica_cargo,
+        s.comentarios_caso,
         s.equipo_corresponde_a,
-        s.motivo_solicitud,
-        s.estado,
-        s.ost 
+        -- Distribuidor / Institución
+        s.nombre_fantasia,
+        s.razon_social,
+        s.cuit,
+        s.contacto_nombre,
+        s.contacto_telefono,
+        s.contacto_tecnico,
+        s.equipo_propiedad,
+        -- Paciente Particular
+        s.nombre_apellido_paciente,
+        s.telefono_paciente,
+        s.equipo_origen,
+        -- OSTs vinculadas
+        (SELECT STRING_AGG(DISTINCT e.ost::TEXT, ', ' ORDER BY e.ost::TEXT)
+         FROM equipos e 
+         WHERE e.solicitud_id = s.id AND e.eliminado = FALSE) as osts_vinculadas 
     FROM solicitudes s
     ORDER BY s.fecha_solicitud DESC
 """)
@@ -186,18 +242,21 @@ def equipos():
     
     # Obtener equipos NO eliminados
     cursor.execute("""
-        SELECT id, cliente, ost, estado, fecha_ingreso, remito,
-               tipo_equipo, marca, modelo, numero_serie, accesorios,
-               observacion_ingreso, prioridad, fecha_envio, proveedor,
-               detalles_reparacion, horas_trabajo, reingreso, 
-               informe AS informe_tecnico,
-               costo AS costo_reparacion, 
-               precio AS precio_cliente, 
-               ov AS numero_ov, 
-               estado_ov, fecha_entrega, remito_entrega
-        FROM equipos
-        WHERE eliminado = FALSE  -- 👈 CLAVE: Solo equipos NO eliminados
-        ORDER BY fecha_ingreso DESC
+        SELECT e.id, e.cliente, e.ost, e.estado, e.fecha_ingreso, e.remito,
+            e.tipo_equipo, e.marca, e.modelo, e.numero_serie, e.accesorios,
+            s.categoria,
+            e.observacion_ingreso, e.prioridad, e.fecha_envio, e.proveedor,
+            e.detalles_reparacion, e.horas_trabajo, e.reingreso, 
+            e.informe AS informe_tecnico,
+            e.costo AS costo_reparacion, 
+            e.precio AS precio_cliente, 
+            e.ov AS numero_ov, 
+            e.estado_ov, e.fecha_entrega, e.remito_entrega,
+            e.solicitud_id
+        FROM equipos e
+        LEFT JOIN solicitudes s ON e.solicitud_id = s.id
+        WHERE e.eliminado = FALSE
+        ORDER BY e.fecha_ingreso DESC
     """)
     equipos = cursor.fetchall()
     
@@ -261,6 +320,10 @@ def perfil():
 
 @app.route('/api/perfil/cambiar-password', methods=['POST'])
 @login_required
+def cambiar_password_perfil():
+   
+    if not current_user.has_permission('edit'):
+        return jsonify({'success': False, 'error': 'No tienes permiso para cambiar tu contraseña'}), 403    
 def cambiar_mi_password():
     """API para que un usuario cambie su propia contraseña"""
     from auth import update_own_password
@@ -337,11 +400,20 @@ def update_solicitud(id):
         campos = []
         valores = []
         
-        # Lista de campos actualizables
+        # Lista de campos actualizables (ahora incluye todos los campos)
         campos_permitidos = [
-            'email_solicitante', 'quien_completa', 'area_solicitante',
-            'solicitante', 'nivel_urgencia', 'logistica_cargo',
-            'equipo_corresponde_a', 'motivo_solicitud', 'estado'
+            # Datos de Ingreso
+            'categoria', 'email_solicitante', 'quien_completa', 
+            'nivel_urgencia', 'motivo_solicitud', 'comercial_cargo', 'estado',
+            # Colaborador Syemed
+            'area_solicitante', 'solicitante', 'logistica_cargo',
+            'comentarios_caso', 'equipo_corresponde_a',
+            # Distribuidor / Institución
+            'nombre_fantasia', 'razon_social', 'cuit', 
+            'nombre_contacto', 'contacto_telefono', 'contacto_tecnico',
+            'equipo_propiedad',
+            # Paciente Particular
+            'nombre_apellido_paciente', 'telefono_paciente', 'equipo_origen'
         ]
         
         for campo in campos_permitidos:
@@ -550,6 +622,29 @@ def update_equipo(id):
         query = f"UPDATE equipos SET {', '.join(campos)} WHERE id = %s"
         
         cursor.execute(query, valores)
+        
+        # Si se actualizó el estado del equipo, actualizar también el estado de la solicitud asociada
+        if 'estado' in data and equipo_actual.get('solicitud_id'):
+            nuevo_estado = data.get('estado')
+            solicitud_id = equipo_actual.get('solicitud_id')
+            
+            cursor.execute("""
+                UPDATE solicitudes 
+                SET estado = %s 
+                WHERE id = %s
+            """, (nuevo_estado, solicitud_id))
+            
+            # Registrar la actualización de la solicitud en auditoría
+            registrar_auditoria(
+                conn,
+                id,
+                current_user.id,
+                current_user.username,
+                'estado_solicitud',
+                equipo_actual.get('estado'),
+                nuevo_estado
+            )
+        
         conn.commit()
         cursor.close()
         conn.close()
@@ -738,8 +833,6 @@ def api_toggle_status():
 def inject_user():
     """Inyecta información del usuario actual en todos los templates"""
     return dict(current_user=current_user)
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
