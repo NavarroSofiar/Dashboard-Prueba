@@ -123,10 +123,15 @@
     display: inline-block;
 }
 
-.urgencia-baja { background: #e8f5e9; color: #2e7d32; }
-.urgencia-media { background: #fff3e0; color: #e65100; }
-.urgencia-alta { background: #ffebee; color: #c62828; }
-.urgencia-critica { background: #1e4d7b; color: white; }
+.urgencia-baja { background: #d4edda; color: #155724; }
+.urgencia-media { background: #fff3cd; color: #856404; }
+.urgencia-medio { background: #fff3cd; color: #856404; }
+.urgencia-alta { background: #f8d7da; color: #721c24; }
+.urgencia-alto { background: #f8d7da; color: #721c24; }
+.urgencia-urgente { background: #f8d7da; color: #721c24; }
+.urgencia-importante { background: #f8d7da; color: #721c24; }
+.urgencia-critica { background: #f8d7da; color: #721c24; }
+
 
 /* OST badges */
 .ost-badge {
@@ -437,7 +442,7 @@ thead .sticky-col {
         <thead>
             <!-- Header superior con categorías -->
             <tr class="header-category">
-                <th colspan="11" class="header-ingreso">Datos de Ingreso</th>
+                <th colspan="10" class="header-ingreso">Datos de Ingreso</th>
                 <th colspan="5" class="header-syemed">Colaborador de Syemed</th>
                 <th colspan="7" class="header-distribuidor">Distribuidor / Institución</th>
                 <th colspan="3" class="header-paciente">Paciente / Particular</th>
@@ -448,7 +453,6 @@ thead .sticky-col {
                 <th class="sticky-col header-ingreso-light" style="width: 50px;">ID</th>
                 <th class="header-ingreso-light" style="width: 180px;">OSTS VINCULADAS</th>
                 <th class="header-ingreso-light" style="width: 110px;">FECHA</th>
-                <th class="header-ingreso-light" style="width: 120px;">ESTADO</th>
                 <th class="header-ingreso-light" style="width: 120px;">CATEGORIA</th>
                 <th class="header-ingreso-light" style="width: 80px;">PDF</th>
                 <th class="header-ingreso-light" style="width: 200px;">EMAIL</th>
@@ -509,14 +513,6 @@ thead .sticky-col {
                 
                 <!-- Fecha -->
                 <td class="cell-ingreso">{{ sol.fecha_solicitud.strftime('%d/%m/%Y') if sol.fecha_solicitud else 'N/A' }}</td>
-                
-                <!-- Estado con badge -->
-                <td class="cell-ingreso">
-                    {% set estado = sol.estado|lower if sol.estado else 'pendiente' %}
-                    <span class="estado-badge estado-{{ estado }}">
-                        {{ sol.estado or 'Pendiente' }}
-                    </span>
-                </td>
                 
                 <!-- Categoría -->
                 <td class="cell-ingreso" title="{{ sol.categoria or '' }}">
@@ -691,6 +687,37 @@ document.getElementById('modalContenido').addEventListener('click', function(e) 
         cerrarModal();
     }
 });
+
+// Función para aplicar colores de urgencia dinámicamente
+function aplicarColoresUrgencia() {
+    document.querySelectorAll('.urgencia-badge').forEach(function(badge) {
+        const texto = badge.textContent.trim();
+        
+        // Remover todas las clases de urgencia existentes
+        badge.classList.remove('urgencia-baja', 'urgencia-media', 'urgencia-medio', 
+                               'urgencia-alta', 'urgencia-alto', 'urgencia-urgente', 
+                               'urgencia-importante', 'urgencia-critica');
+        
+        // Detectar y aplicar la clase correcta basada en texto o números
+        if (texto.includes('Bajo') || texto.includes('Baja') || 
+            texto.includes('(0)') || texto.includes('(1)')) {
+            badge.classList.add('urgencia-baja');
+        } 
+        else if (texto.includes('Media') || texto.includes('Medio') || 
+                 texto.includes('(2)') || texto.includes('(3)')) {
+            badge.classList.add('urgencia-media');
+        } 
+        else if (texto.includes('Alto') || texto.includes('Alta') || 
+                 texto.includes('(4)') || texto.includes('(5)') ||
+                 texto.includes('Urgente') || texto.includes('Importante')) {
+            badge.classList.add('urgencia-alta');
+        }
+    });
+}
+
+// Aplicar colores al cargar la página
+document.addEventListener('DOMContentLoaded', aplicarColoresUrgencia);
+
 
 
 
