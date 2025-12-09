@@ -622,29 +622,6 @@ def update_equipo(id):
         query = f"UPDATE equipos SET {', '.join(campos)} WHERE id = %s"
         
         cursor.execute(query, valores)
-        
-        # Si se actualizó el estado del equipo, actualizar también el estado de la solicitud asociada
-        if 'estado' in data and equipo_actual.get('solicitud_id'):
-            nuevo_estado = data.get('estado')
-            solicitud_id = equipo_actual.get('solicitud_id')
-            
-            cursor.execute("""
-                UPDATE solicitudes 
-                SET estado = %s 
-                WHERE id = %s
-            """, (nuevo_estado, solicitud_id))
-            
-            # Registrar la actualización de la solicitud en auditoría
-            registrar_auditoria(
-                conn,
-                id,
-                current_user.id,
-                current_user.username,
-                'estado_solicitud',
-                equipo_actual.get('estado'),
-                nuevo_estado
-            )
-        
         conn.commit()
         cursor.close()
         conn.close()
